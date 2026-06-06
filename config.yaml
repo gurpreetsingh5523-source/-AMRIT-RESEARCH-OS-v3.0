@@ -1,0 +1,39 @@
+# AMRIT Research OS v3.0 — Configuration
+
+version: "3.0"
+
+# ----- Database -----
+database:
+  research: "data/research.db"
+  knowledge_graph: "data/knowledge_graph.db"
+
+# ----- Logging -----
+logging:
+  level: INFO
+  file: "logs/system.log"
+
+# ----- Reports -----
+reports:
+  pdf_output: "reports/pdf/"
+  json_output: "reports/json/"
+
+# ----- Core Modules -----
+core:
+  brain:
+    enabled: true
+  memory:
+    enabled: true
+  agents:
+    enabled: true
+  statistics:
+    enabled: true
+  knowledge_graph:
+    enabled: true
+  data_sources:
+    enabled: true
+  paper_writer:
+    enabled: true
+  dashboard:
+    enabled: true
+  quantum:
+    enabled: false   # experimental
