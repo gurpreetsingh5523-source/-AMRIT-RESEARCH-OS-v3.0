@@ -22,7 +22,7 @@ class StatisticalEngine:
 
     # ─────────────────── Monte Carlo ───────────────────
 
-    def monte_carlo(self, iterations: int = 10000) -> dict:
+    def monte_carlo(self, iterations: int = 100000) -> dict:
         """Monte Carlo simulation — estimate pi as a demo."""
         inside = 0
         for _ in range(iterations):
