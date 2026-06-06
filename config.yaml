@@ -1,0 +1,76 @@
+# AMRIT RESEARCH OS v3.0 — Configuration
+
+system:
+  name: "AMRIT RESEARCH OS"
+  version: "3.0"
+  author: "Gurpreet Singh"
+  log_level: "INFO"
+  log_file: "logs/system.log"
+
+database:
+  research_db: "data/research.db"
+  knowledge_graph_db: "data/knowledge_graph.db"
+
+data_sources:
+  timeout: 10          # HTTP request timeout (seconds)
+  max_per_source: 5    # Max results per source per query
+  reliability_scores:
+    NASA: 95
+    PubMed: 98
+    ArXiv: 85
+    OpenAlex: 80
+    SemanticScholar: 82
+    CrossRef: 88
+
+statistics:
+  monte_carlo_iterations: 10000
+  benford_alpha: 0.05
+  default_sample_size: 1000
+
+agents:
+  enabled:
+    - ResearchAgent
+    - MathAgent
+    - PhysicsAgent
+    - BiologyAgent
+    - ReviewerAgent
+    - SkepticAgent
+    - CoderAgent
+
+knowledge_graph:
+  export_path: "reports/json/knowledge_graph.json"
+
+paper_writer:
+  output_dir: "reports"
+  pdf_dir: "reports/pdf"
+  json_dir: "reports/json"
+
+quantum:
+  enabled: true
+  backend: "simulation"   # 'simulation' | 'qiskit' (when installed)
+
+dashboard:
+  terminal: true
+
+# ── Research Domains ──────────────────────────────────
+research:
+  default_domain: ""      # leave empty for random
+  domains:
+    - Physics
+    - Biology
+    - Mathematics
+    - Astronomy
+    - Chemistry
+    - Neuroscience
+    - Climate Science
+
+# ── Development Roadmap ──────────────────────────────
+roadmap:
+  phase_1: "Core Research Brain          ✅"
+  phase_2: "Memory + Database            ✅"
+  phase_3: "Multi-Agent Swarm            ✅"
+  phase_4: "Knowledge Graph              ✅"
+  phase_5: "Paper Generator              ✅"
+  phase_6: "Dashboard                    ✅"
+  phase_7: "Quantum Layer                ✅ (simulation)"
+  phase_8: "Autonomous Scientist         ✅"

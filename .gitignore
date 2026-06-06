@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Data & Reports (generated at runtime)
+data/*.db
+reports/pdf/
+reports/json/
+logs/system.log
+
+# OS
+.DS_Store
