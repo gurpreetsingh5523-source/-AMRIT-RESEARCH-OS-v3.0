@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD033 MD036 MD041 MD060 -->
 <div align="center">
 
 <img src="assets/preview.svg" alt="AMRIT RESEARCH OS v4.0 Dashboard" width="100%"/>
@@ -46,7 +47,7 @@ AMRIT is a fully autonomous research operating system that discovers, analyzes, 
 
 ## 14-Step Research Pipeline
 
-```
+```text
 💡 Hypothesis → 📋 Plan → 🗄 Data → 📊 Statistics → 🧠 Reasoning
 → 👥 Agents → 💬 Debate → ✅ Peer Review → 🕸 KG Build
 → 💾 Memory → 🔗 Citations → 📄 Paper → ⚛ Quantum → 🖥 Dashboard
@@ -101,7 +102,7 @@ curl -X POST http://localhost:8000/api/memory/search \
 
 Every research cycle prints color-coded steps in the terminal:
 
-```
+```text
 ────────────────────────────────────────────────────
   [15:33:42] ▶ NEW RESEARCH CYCLE  ·  DOMAIN: PHYSICS
 ────────────────────────────────────────────────────
