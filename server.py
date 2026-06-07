@@ -65,7 +65,7 @@ from core.memory import MemoryManager, VectorMemory, ThreadManager
 from core.statistics import StatisticalEngine
 from core.agents import (
     AgentManager, SelfCritiqueLoop, DocumentAgent, EmailAgent,
-    ResearchPlannerAgent, SkillFactory,
+    ResearchPlannerAgent, SkillFactory, SelfHealingAgent,
 )
 from core.knowledge_graph import KnowledgeGraph
 from core.data_sources import DataCollector
@@ -120,6 +120,15 @@ _planner   = ResearchPlannerAgent(_router, data=_data, tools=_tools)
 _skills    = SkillFactory(_router, sandbox=_sandbox, vector_memory=_vmem, tools=_tools)
 _scheduler = BackgroundScheduler(email_agent=_email, vector_memory=_vmem,
                                  interval_seconds=300)
+
+# ─── v4: self-healing autonomous agent (survival mode) ───
+_healer = SelfHealingAgent(router=_router)
+try:
+    _boot_heal = _healer.survival_mode()
+    if not _boot_heal.get("check", {}).get("healthy", True):
+        print("  [self-heal] boot check found issues — repairs attempted")
+except Exception as _e:
+    print(f"  [self-heal] survival check skipped: {_e}")
 
 
 # ── Models ────────────────────────────────────────────
@@ -217,6 +226,10 @@ class LearnRequest(BaseModel):
 class SchedulerRequest(BaseModel):
     interval_seconds: int = 300
 
+
+class HealRequest(BaseModel):
+    traceback: str = ""         # paste a traceback to repair the offending file
+    modules: list = []          # or a list of import names to ensure/install
 
 # ── Routes ───────────────────────────────────────────
 
@@ -784,6 +797,35 @@ async def scheduler_run_now():
 @app.get("/api/notifications")
 async def get_notifications(after: str = ""):
     return JSONResponse({"notifications": _scheduler.notifications(after)})
+
+
+# ── v4: self-healing autonomous agent ────────────────
+
+@app.get("/api/heal/check")
+async def heal_check():
+    """Diagnose system health: compile all files + check Ollama."""
+    return JSONResponse(_healer.self_check())
+
+
+@app.post("/api/heal/survival")
+async def heal_survival():
+    """Run full self-repair: ensure deps, self-check, auto-fix broken files."""
+    return JSONResponse(_healer.survival_mode())
+
+
+@app.post("/api/heal")
+async def heal(req: HealRequest):
+    """Repair from a traceback, or auto-install a list of missing modules."""
+    if req.modules:
+        return JSONResponse(_healer.ensure_dependencies(req.modules))
+    if req.traceback:
+        return JSONResponse(_healer.heal_exception(tb_text=req.traceback))
+    return JSONResponse({"ok": False, "reason": "provide 'traceback' or 'modules'"})
+
+
+@app.get("/api/heal/history")
+async def heal_history(limit: int = 50):
+    return JSONResponse({"history": _healer.history(limit)})
 
 
 # ── Entry point ──────────────────────────────────────

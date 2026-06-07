@@ -184,27 +184,54 @@ class SkillFactory:
         return {"ok": True, "sample_output": sample}
 
     def build_tool(self, name: str, description: str,
-                   test_args: dict = None, code: str = "") -> dict:
-        """Generate (or accept) a `run(**kwargs)` tool, validate, persist, register."""
+                   test_args: dict = None, code: str = "", max_attempts: int = 3) -> dict:
+        """
+        Generate (or accept) a `run(**kwargs)` tool, validate, persist, register.
+
+        Self-fixing: if the generated code fails sandbox validation, the error
+        is fed back to the model and the tool is REGENERATED, up to
+        `max_attempts` times, instead of giving up on the first failure.
+        """
         slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
         test_args = test_args or {}
 
-        if not code:
-            code = self._ask(
-                "coding",
-                f"Tool name: {name}\nWhat it should do: {description}\n"
-                f"It will be called as run(**{json.dumps(test_args)}).",
-                TOOL_SYSTEM,
-            )
-            code = self._strip_fences(code)
-        if not code or "def run" not in code:
-            return {"ok": False, "name": name,
-                    "reason": "no valid tool code generated (model offline or bad output)",
-                    "code": code}
+        # If caller supplied code directly, try it once as-is.
+        attempts = []
+        check = None
+        last_error = ""
 
-        check = self._validate_code(code, test_args)
-        if not check["ok"]:
-            return {"ok": False, "name": name, "reason": check["reason"], "code": code}
+        for attempt in range(1, max_attempts + 1):
+            if not code:
+                hint = ""
+                if last_error:
+                    hint = (f"\nThe previous version FAILED with this error:\n"
+                            f"{last_error}\nFix it and return the full corrected "
+                            f"`run` function.")
+                code = self._ask(
+                    "coding",
+                    f"Tool name: {name}\nWhat it should do: {description}\n"
+                    f"It will be called as run(**{json.dumps(test_args)}).{hint}",
+                    TOOL_SYSTEM,
+                )
+                code = self._strip_fences(code)
+
+            if not code or "def run" not in code:
+                last_error = "no valid tool code generated (model offline or bad output)"
+                attempts.append({"attempt": attempt, "error": last_error})
+                code = ""          # force a fresh generation next loop
+                continue
+
+            check = self._validate_code(code, test_args)
+            if check["ok"]:
+                break
+            last_error = check.get("reason", "validation failed")
+            attempts.append({"attempt": attempt, "error": last_error})
+            code = ""              # regenerate from scratch with the error as feedback
+
+        if not check or not check.get("ok"):
+            return {"ok": False, "name": name,
+                    "reason": last_error or "could not produce a working tool",
+                    "attempts": attempts, "code": code}
 
         # Persist code + metadata
         py_path = os.path.join(self.tools_dir, slug + ".py")
@@ -219,7 +246,8 @@ class SkillFactory:
 
         self._register_tool(slug, code)
         return {"ok": True, "name": name, "slug": slug,
-                "sample_output": check.get("sample_output"), "code": code}
+                "sample_output": check.get("sample_output"),
+                "attempts_used": len(attempts) + 1, "code": code}
 
     def _register_tool(self, slug: str, code: str):
         """Register a live tool in the ToolManager that runs via the sandbox."""

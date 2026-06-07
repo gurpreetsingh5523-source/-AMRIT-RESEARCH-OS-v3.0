@@ -21,3 +21,6 @@ logs/system.log
 
 # TurboVec runtime index (regenerated)
 data/turbovec/
+
+# Self-healing backups & audit log (runtime)
+data/self_heal/

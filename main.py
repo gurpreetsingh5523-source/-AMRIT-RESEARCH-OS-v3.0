@@ -31,6 +31,7 @@ from core.brain import ResearchBrain, DiscoveryEngine
 from core.memory import MemoryManager, VectorMemory, AMRITMemoryBridge
 from core.statistics import StatisticalEngine
 from core.agents import AgentManager, SelfCritiqueLoop
+from core.agents import SelfHealingAgent
 from core.knowledge_graph import KnowledgeGraph
 from core.data_sources import DataCollector
 from core.paper_writer import PaperWriter
@@ -69,6 +70,12 @@ class AmritResearchOS:
         self.quantum = QuantumLayer()
         self.ai = OllamaClient(model=self.router.resolve("research"))
         self.domain = domain or self.brain.domain
+        # ── self-healing: keep the system alive with zero maintenance ──
+        self.healer = SelfHealingAgent(router=self.router)
+        try:
+            self.healer.survival_mode()
+        except Exception as e:
+            log.warning(f"Self-heal survival check skipped: {e}")
         log.info(f"Vector memory: {'on' if self.vmem.enabled else 'off'}  |  "
                  f"Routing: {self.router.routing_table()}")
         # Log AI status

@@ -40,6 +40,7 @@ AMRIT is a fully autonomous research operating system that discovers, analyzes, 
 | `DataCollector` | ArXiv · PubMed · NASA · OpenAlex · SemanticScholar · CrossRef |
 | `PaperWriter` | Auto-generates full research papers (APA/MLA/IEEE citations) |
 | `QuantumLayer` | Qubit simulation, Grover search, VQE optimization |
+| `SelfHealingAgent` | **Self-fix & survival mode** — auto-installs missing libraries, self-diagnoses, and repairs its own code (LLM patch + auto-rollback) so it runs with zero maintenance |
 | `OllamaClient` | Local AI brain — deepseek-coder-v2 (no cloud) |
 | `Dashboard` | FastAPI web server + terminal live logs |
 
@@ -52,6 +53,40 @@ AMRIT is a fully autonomous research operating system that discovers, analyzes, 
 → 👥 Agents → 💬 Debate → ✅ Peer Review → 🕸 KG Build
 → 💾 Memory → 🔗 Citations → 📄 Paper → ⚛ Quantum → 🖥 Dashboard
 ```
+
+---
+
+## 🩺 Self-Healing & Survival Mode
+
+This project is built for **zero-maintenance** use — clone it and run, and the
+system keeps **itself** alive. No paid support needed.
+
+- **Auto-install** — detects a missing Python library and installs it itself
+  (maps import names → pip packages).
+- **Self-diagnosis** — compiles every file and checks Ollama on every boot.
+- **Self-fix** — on a runtime error it locates the offending file, asks the
+  local LLM for a precise patch, **backs up** the file, applies the fix, and
+  **rolls back automatically** if the patch does not compile.
+- **Survival mode** — runs at startup to repair anything it can, safely.
+
+Safety: only files inside the repo are ever modified, every change is backed
+up (`data/self_heal/backups/`), and every action is logged
+(`data/self_heal/heal_log.jsonl`).
+
+```bash
+# diagnose system health
+curl http://localhost:8000/api/heal/check
+
+# run full self-repair (install deps + fix broken files)
+curl -X POST http://localhost:8000/api/heal/survival
+
+# repair from a pasted Python traceback
+curl -X POST http://localhost:8000/api/heal \
+  -H 'Content-Type: application/json' \
+  -d '{"traceback":"<paste traceback here>"}'
+```
+
+Or open the **Self-Heal** tab in the dashboard.
 
 ---
 

@@ -239,6 +239,7 @@ body{
   <button class="tab" data-tab="email" onclick="switchTab('email')">Email Agent</button>
   <button class="tab" data-tab="agents" onclick="switchTab('agents')">Agents</button>
   <button class="tab" data-tab="scheduler" onclick="switchTab('scheduler')">Scheduler</button>
+  <button class="tab" data-tab="heal" onclick="switchTab('heal')">Self-Heal</button>
   <button class="tab" data-tab="system" onclick="switchTab('system')">System</button>
   <span style="flex:1"></span>
   <button class="tab" id="notif-bell" onclick="switchTab('scheduler')" title="Notifications">🔔 <span id="notif-count">0</span></button>
@@ -561,6 +562,32 @@ body{
 </div>
 
 <!-- ── SYSTEM ── -->
+<div id="tab-heal" class="tab-panel">
+  <div class="pane">
+    <div class="pane-2col">
+      <div class="card">
+        <h3>System health</h3>
+        <p class="muted">The system checks and repairs itself — zero maintenance.</p>
+        <div class="chat-row">
+          <button class="v4-btn" id="heal-check" onclick="healCheck()">Run health check</button>
+          <button class="v4-btn" id="heal-survival" onclick="healSurvival()">Survival mode (auto-fix)</button>
+        </div>
+        <div id="heal-status" style="margin-top:12px"><span class="muted">Not run yet.</span></div>
+        <div id="heal-out" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h3>Repair from an error</h3>
+        <p class="muted">Paste a Python traceback and the system will try to fix the file itself.</p>
+        <textarea class="v4-input" id="heal-tb" rows="6" placeholder="Paste a traceback here…" style="width:100%;font-family:monospace"></textarea>
+        <div class="chat-row" style="margin-top:8px">
+          <button class="v4-btn" id="heal-fix" onclick="healFix()">Heal this error</button>
+        </div>
+        <div style="margin-top:14px"><div class="out-label">Recent repairs</div><div id="heal-history"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="tab-system" class="tab-panel">
   <div class="pane">
     <div class="pane-2col">
@@ -856,6 +883,7 @@ function switchTab(name){
   if(el)el.classList.add('active');
   if(name==='system')loadSystem();
   if(name==='scheduler'){refreshSched();refreshNotifs();}
+  if(name==='heal')healHistory();
   if(name==='chat')loadThreadList();
 }
 
@@ -863,6 +891,50 @@ function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':
 async function postJSON(url,body){
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   return r.json();
+}
+
+// ── Self-Heal ──
+function healBadge(ok,txt){
+  const c=ok?'var(--teal)':'#e06c6c';
+  return `<span style="border:1px solid ${c};color:${c};padding:2px 8px;border-radius:6px;font-size:12px">${esc(txt)}</span>`;
+}
+async function healCheck(){
+  document.getElementById('heal-status').innerHTML='<span class="muted">Checking…</span>';
+  const d=await fetch('/api/heal/check').then(r=>r.json());
+  const ok=d.healthy;
+  let h=healBadge(ok, ok?'HEALTHY':(d.syntax_errors.length+' issue(s)'))+
+        ` &nbsp; ${d.files_scanned} files scanned &nbsp; `+
+        healBadge(d.ollama_available,'Ollama '+(d.ollama_available?'online':'offline'));
+  document.getElementById('heal-status').innerHTML=h;
+  document.getElementById('heal-out').innerHTML=(d.syntax_errors||[])
+    .map(e=>`<div class="out-row"><b>${esc(e.file)}</b><br><span class="muted">${esc(e.error)}</span></div>`).join('')||'';
+}
+async function healSurvival(){
+  document.getElementById('heal-status').innerHTML='<span class="muted">Running survival mode…</span>';
+  const d=await postJSON('/api/heal/survival',{});
+  const dep=d.dependencies||{};
+  const reps=d.repairs||[];
+  let h=healBadge(d.ok,'survival '+(d.ok?'done':'error'))+
+    ` &nbsp; installed: ${(dep.installed||[]).length} &nbsp; repaired: ${reps.filter(r=>r.ok).length}/${reps.length}`;
+  document.getElementById('heal-status').innerHTML=h;
+  document.getElementById('heal-out').innerHTML=reps
+    .map(r=>`<div class="out-row">${healBadge(r.ok,r.ok?'fixed':'failed')} <b>${esc(r.file||'')}</b></div>`).join('');
+  healHistory();
+}
+async function healFix(){
+  const tb=document.getElementById('heal-tb').value.trim();
+  if(!tb){return;}
+  document.getElementById('heal-out').innerHTML='<span class="muted">Analysing & repairing…</span>';
+  const d=await postJSON('/api/heal',{traceback:tb});
+  let msg = d.ok ? ('Repaired: '+(d.file||d.module||'')) : ('Could not repair: '+(d.reason||''));
+  document.getElementById('heal-out').innerHTML=`<div class="out-row">${healBadge(d.ok,d.kind||'heal')} ${esc(msg)}</div>`;
+  healHistory();
+}
+async function healHistory(){
+  const d=await fetch('/api/heal/history?limit=20').then(r=>r.json()).catch(()=>({history:[]}));
+  document.getElementById('heal-history').innerHTML=(d.history||[]).slice().reverse()
+    .map(h=>`<div class="out-row"><span class="muted">${esc(h.ts||'')}</span> · ${esc(h.action)} ${h.ok===false?'✗':'✓'}</div>`).join('')
+    ||'<span class="muted">No repairs yet.</span>';
 }
 
 // ── Chat ──
