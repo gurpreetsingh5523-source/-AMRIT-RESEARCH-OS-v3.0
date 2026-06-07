@@ -27,33 +27,45 @@ logging.basicConfig(
 log = logging.getLogger("AmritResearchOS")
 
 # ─────────────────── Imports ───────────────────
-from core.brain import ResearchBrain
-from core.memory import MemoryManager
+from core.brain import ResearchBrain, DiscoveryEngine
+from core.memory import MemoryManager, VectorMemory
 from core.statistics import StatisticalEngine
-from core.agents import AgentManager
+from core.agents import AgentManager, SelfCritiqueLoop
 from core.knowledge_graph import KnowledgeGraph
 from core.data_sources import DataCollector
 from core.paper_writer import PaperWriter
 from core.dashboard import Dashboard
 from core.quantum import QuantumLayer
+from core.models import ModelRouter
+from core.tools import ToolManager
+from core.sandbox import SandboxExecutor
 from core.ai.ollama_client import OllamaClient
 
 
 class AmritResearchOS:
 
     def __init__(self, domain: str = ""):
-        log.info("Initialising AMRIT RESEARCH OS v3.0 ...")
+        log.info("Initialising AMRIT RESEARCH OS v4.0 ...")
+        self.router = ModelRouter()
         self.brain = ResearchBrain()
         self.memory = MemoryManager()
+        self.vmem = VectorMemory()
         self.stats = StatisticalEngine()
-        self.agents = AgentManager()
+        self.agents = AgentManager(self.router)
+        self.critic = SelfCritiqueLoop(self.router)
+        self.discovery = DiscoveryEngine(self.router)
         self.graph = KnowledgeGraph()
         self.data = DataCollector()
+        self.sandbox = SandboxExecutor()
+        self.tools = ToolManager(data=self.data, sandbox=self.sandbox,
+                                 graph=self.graph, vector_memory=self.vmem)
         self.writer = PaperWriter()
         self.dash = Dashboard()
         self.quantum = QuantumLayer()
-        self.ai = OllamaClient(model="deepseek-coder-v2:latest")
+        self.ai = OllamaClient(model=self.router.resolve("research"))
         self.domain = domain or self.brain.domain
+        log.info(f"Vector memory: {'on' if self.vmem.enabled else 'off'}  |  "
+                 f"Routing: {self.router.routing_table()}")
         # Log AI status
         if self.ai.is_available():
             models = self.ai.list_models()
@@ -75,6 +87,14 @@ class AmritResearchOS:
             hypothesis = self.brain.generate_hypothesis(self.domain)
             log.info(f"Hypothesis: {hypothesis}")
         self.dash.log_event(f"Hypothesis generated: {hypothesis[:60]}...")
+
+        # ── Step 1b: Semantic recall (vector memory) ──
+        if self.vmem.enabled:
+            similar = self.vmem.recall_similar_research(hypothesis, k=3)
+            if similar:
+                log.info(f"Vector recall: {len(similar)} related prior findings")
+                for s in similar:
+                    log.info(f"   ~ {s['text'][:70]} (dist={s.get('distance')})")
 
         # ── Step 2: Research Plan ──
         plan = self.brain.generate_research_plan(hypothesis)
@@ -141,6 +161,14 @@ class AmritResearchOS:
         else:
             self.memory.record_evolution("failed", hypothesis)
 
+        # ── Step 10b: Vector memory store (semantic) ──
+        if self.vmem.enabled:
+            self.vmem.remember_finding(hypothesis, result, domain=self.domain)
+            for item in collected.get("arxiv", []):
+                if "title" in item and "error" not in item:
+                    self.vmem.remember_paper(item)
+            log.info("Stored finding + papers in vector memory")
+
         # ── Step 11: Auto Citations ──
         sources = []
         for item in collected.get("arxiv", []):
@@ -167,7 +195,13 @@ class AmritResearchOS:
         # Use AI-generated abstract if available
         if self.ai.is_available():
             ai_abstract = self.ai.write_abstract(hypothesis, result)
-            peer_review["ai_abstract"] = ai_abstract
+            # Self-critique loop: draft -> critic -> improve (up to 3x)
+            refined = self.critic.run(ai_abstract, context=f"Hypothesis: {hypothesis}")
+            peer_review["ai_abstract"] = refined["final_draft"]
+            peer_review["critique_score"] = refined["final_score"]
+            peer_review["critique_cycles"] = refined["cycles_run"]
+            log.info(f"Self-critique: {refined['cycles_run']} cycle(s), "
+                     f"final score={refined['final_score']}")
 
         paper = self.writer.generate_paper(
             hypothesis=hypothesis,

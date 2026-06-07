@@ -7,6 +7,11 @@ venv/
 
 # Data & Reports (generated at runtime)
 data/*.db
+data/**/*.db
+data/vector_store/
+data/built_tools/
+data/skills/
+data/threads.json
 reports/pdf/
 reports/json/
 logs/system.log

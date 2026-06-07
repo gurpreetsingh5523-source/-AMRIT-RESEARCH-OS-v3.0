@@ -67,6 +67,24 @@ class OllamaClient:
         except Exception as e:
             return f"[Ollama error] {e}"
 
+    def embeddings(self, text: str, model: str = "nomic-embed-text:latest") -> list:
+        """Return an embedding vector for `text` using a local Ollama model."""
+        if not self.is_available():
+            return []
+        payload = json.dumps({"model": model, "prompt": text}).encode("utf-8")
+        req = urllib.request.Request(
+            f"{self.base_url}/api/embeddings",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                data = json.loads(r.read().decode())
+                return data.get("embedding", [])
+        except Exception:
+            return []
+
     def generate_hypothesis(self, domain: str) -> str:
         return self.chat(
             f"Generate a single novel testable research hypothesis in: {domain}. One sentence only.",
