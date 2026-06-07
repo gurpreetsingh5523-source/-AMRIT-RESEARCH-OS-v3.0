@@ -28,7 +28,7 @@ log = logging.getLogger("AmritResearchOS")
 
 # ─────────────────── Imports ───────────────────
 from core.brain import ResearchBrain, DiscoveryEngine
-from core.memory import MemoryManager, VectorMemory
+from core.memory import MemoryManager, VectorMemory, AMRITMemoryBridge
 from core.statistics import StatisticalEngine
 from core.agents import AgentManager, SelfCritiqueLoop
 from core.knowledge_graph import KnowledgeGraph
@@ -50,6 +50,11 @@ class AmritResearchOS:
         self.brain = ResearchBrain()
         self.memory = MemoryManager()
         self.vmem = VectorMemory()
+        try:
+            self.bridge = AMRITMemoryBridge(self.vmem)
+        except Exception as e:
+            self.bridge = None
+            log.warning(f"TurboVec bridge unavailable: {e}")
         self.stats = StatisticalEngine()
         self.agents = AgentManager(self.router)
         self.critic = SelfCritiqueLoop(self.router)
@@ -96,6 +101,15 @@ class AmritResearchOS:
                 for s in similar:
                     log.info(f"   ~ {s['text'][:70]} (dist={s.get('distance')})")
 
+        # ── Step 1c: TurboVec duplicate check ──
+        if self.bridge:
+            try:
+                is_dup, similar = self.bridge.check_duplicate(hypothesis)
+                if is_dup:
+                    log.info(f"TurboVec: similar hypothesis seen before — {similar[:80]}")
+            except Exception as e:
+                log.warning(f"TurboVec duplicate check failed: {e}")
+
         # ── Step 2: Research Plan ──
         plan = self.brain.generate_research_plan(hypothesis)
         log.info("Research plan created")
@@ -110,6 +124,15 @@ class AmritResearchOS:
         log.info(f"Collected — ArXiv: {arxiv_count}, PubMed: {pubmed_count}")
         self.dash.log_event(f"Data collected: ArXiv={arxiv_count}, PubMed={pubmed_count}")
 
+        # ── Step 3b: TurboVec paper ingest (semantic) ──
+        if self.bridge:
+            try:
+                papers = [p for src in collected.values() for p in src
+                          if isinstance(p, dict) and "title" in p and "error" not in p]
+                self.bridge.on_paper_collected(papers)
+            except Exception as e:
+                log.warning(f"TurboVec paper ingest failed: {e}")
+
         # ── Step 4: Statistical Analysis ──
         log.info("Running statistical analysis ...")
         self.dash.log_event("Running statistics ...")
@@ -123,6 +146,13 @@ class AmritResearchOS:
         # ── Step 6: Multi-Agent Review ──
         log.info("Running multi-agent review ...")
         self.dash.log_event("Multi-agent swarm running ...")
+        if self.bridge:
+            try:
+                ctx = self.bridge.get_agent_context(hypothesis)
+                if ctx and "No relevant" not in ctx:
+                    log.info("TurboVec context provided to agents")
+            except Exception as e:
+                log.warning(f"TurboVec agent context failed: {e}")
         reviews = self.agents.review(hypothesis, result)
 
         # ── Step 7: AI Debate ──
@@ -168,6 +198,14 @@ class AmritResearchOS:
                 if "title" in item and "error" not in item:
                     self.vmem.remember_paper(item)
             log.info("Stored finding + papers in vector memory")
+
+        # ── Step 10c: TurboVec finding store + persist ──
+        if self.bridge:
+            try:
+                self.bridge.on_finding_ready(hypothesis, result, self.domain)
+                self.bridge.save()
+            except Exception as e:
+                log.warning(f"TurboVec finding store failed: {e}")
 
         # ── Step 11: Auto Citations ──
         sources = []

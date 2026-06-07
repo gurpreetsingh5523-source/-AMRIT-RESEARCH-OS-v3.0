@@ -1,16 +1,16 @@
 <div align="center">
 
-<img src="assets/preview.svg" alt="AMRIT RESEARCH OS v3.0 Dashboard" width="100%"/>
+<img src="assets/preview.svg" alt="AMRIT RESEARCH OS v4.0 Dashboard" width="100%"/>
 
-# AMRIT RESEARCH OS v3.0
+# AMRIT RESEARCH OS v4.0
 
 **Autonomous Scientific Discovery Engine**
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat&logo=python&logoColor=white)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.9+-blue?style=flat&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-00C7B7?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Ollama](https://img.shields.io/badge/Ollama-deepseek--coder--v2-purple?style=flat)](https://ollama.ai)
-[![Qiskit](https://img.shields.io/badge/Quantum-Qiskit%20%2B%20Sim-6929C4?style=flat)](https://qiskit.org)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
+[![TurboVec](https://img.shields.io/badge/Memory-TurboVec%20(TurboQuant)-FF6B00?style=flat)](https://pypi.org/project/turbovec/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat)](https://opensource.org/licenses/MIT)
 
 *by Gurpreet Singh*
 
@@ -32,6 +32,7 @@ AMRIT is a fully autonomous research operating system that discovers, analyzes, 
 |--------|---------|
 | `ResearchBrain` | Hypothesis generation, scientific reasoning |
 | `MemoryManager` | SQLite persistent memory (findings, evolution) |
+| `VectorMemory` | **TurboVec** semantic memory (16× less RAM, local Ollama embeddings) |
 | `StatisticalEngine` | Monte Carlo (100k iter), Bayesian, Benford's Law |
 | `AgentManager` | 7-agent swarm + debate engine (Believer ↔ Skeptic → Judge) |
 | `KnowledgeGraph` | SQLite-backed entity relationship graph |
@@ -60,17 +61,38 @@ AMRIT is a fully autonomous research operating system that discovers, analyzes, 
 git clone https://github.com/gurpreetsingh5523-source/-AMRIT-RESEARCH-OS-v3.0.git
 cd -AMRIT-RESEARCH-OS-v3.0
 
-# 2. Install
-pip install fastapi uvicorn requests pyyaml
+# 2. Install Python deps
+pip install fastapi uvicorn requests pyyaml numpy scipy
 
-# 3. Start Ollama (optional — works offline too)
-ollama pull deepseek-coder-v2
+# 3. Install TurboVec memory (recommended — falls back to numpy if skipped)
+pip install turbovec
 
-# 4. Run
+# 4. Start Ollama + pull models
+ollama pull deepseek-coder-v2      # reasoning / generation
+ollama pull nomic-embed-text       # 768-dim embeddings for memory
+
+# 5. Run the dashboard
 python3 server.py
 
-# 5. Open browser
+# 6. Open browser
 open http://localhost:8000
+```
+
+### Command-line research
+
+```bash
+# run the full pipeline on a domain
+python3 main.py --domain "Neuroscience"
+```
+
+### Quick API checks
+
+```bash
+curl http://localhost:8000/api/health
+
+curl -X POST http://localhost:8000/api/memory/search \
+  -H 'Content-Type: application/json' \
+  -d '{"collection":"research_notes","query":"sleep and memory","k":3}'
 ```
 
 ---
@@ -98,8 +120,9 @@ Every research cycle prints color-coded steps in the terminal:
 
 ## Tech Stack
 
-- **Backend:** Python 3.10+, FastAPI, Uvicorn
+- **Backend:** Python 3.9+, FastAPI, Uvicorn
 - **AI:** Ollama (deepseek-coder-v2:latest, local, offline-capable)
+- **Memory:** TurboVec (TurboQuant) semantic store + Ollama `nomic-embed-text` embeddings
 - **Database:** SQLite (research.db + knowledge_graph.db)
 - **Quantum:** Qiskit + custom simulation layer
 - **Frontend:** Vanilla HTML/CSS/JS — JetBrains Mono, Space Mono
@@ -121,5 +144,5 @@ Every research cycle prints color-coded steps in the terminal:
 ---
 
 <div align="center">
-<sub>Built with ♥ on macOS M5 · AMRIT RESEARCH OS v3.0</sub>
+<sub>Built with ♥ on macOS · AMRIT RESEARCH OS v4.0</sub>
 </div>

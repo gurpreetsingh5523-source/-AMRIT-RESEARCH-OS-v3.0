@@ -18,3 +18,6 @@ logs/system.log
 
 # OS
 .DS_Store
+
+# TurboVec runtime index (regenerated)
+data/turbovec/
