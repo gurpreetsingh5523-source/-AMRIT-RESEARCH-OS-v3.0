@@ -1,0 +1,23 @@
+{
+  "08c7ad9ecca9": {
+    "id": "08c7ad9ecca9",
+    "name": "Amrit Research OS",
+    "category": "Amrit Project",
+    "created": "2026-06-15T11:03:27",
+    "messages": []
+  },
+  "1d780e35f8b6": {
+    "id": "1d780e35f8b6",
+    "name": "Kirpa Agent",
+    "category": "Personal",
+    "created": "2026-06-15T11:03:27",
+    "messages": []
+  },
+  "34a05dc57996": {
+    "id": "34a05dc57996",
+    "name": "Email Assistant",
+    "category": "Business",
+    "created": "2026-06-15T11:03:27",
+    "messages": []
+  }
+}

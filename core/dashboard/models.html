@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AMRIT — Model Manager</title>
+<style>
+:root{--bg:#0a0c0f;--card:#13161c;--border:#222831;--purple:#7f6fe8;--teal:#1d9e75;
+--amber:#ef9f27;--text:#e2e8f0;--text2:#94a3b8;--text3:#475569;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,Segoe UI,sans-serif}
+body{background:var(--bg);color:var(--text);padding:24px;font-size:14px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;
+border-bottom:1px solid var(--border);padding-bottom:16px}
+.hdr h1{font-size:18px;font-weight:600}
+.hdr .sub{font-size:11px;color:var(--text3);margin-top:2px}
+.status{display:flex;align-items:center;gap:8px;font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:#6b7280}
+.dot.on{background:var(--teal);box-shadow:0 0 8px var(--teal)}
+.toolbar{display:flex;gap:10px;margin-bottom:20px;align-items:center}
+.btn{padding:8px 16px;border-radius:6px;border:1px solid var(--purple);background:rgba(127,111,232,.1);
+color:var(--purple);font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+.btn:hover{background:rgba(127,111,232,.25)}
+.toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-left:auto}
+.switch{position:relative;width:42px;height:22px;background:var(--border);border-radius:20px;cursor:pointer;transition:.2s}
+.switch.on{background:var(--teal)}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+background:#fff;transition:.2s}
+.switch.on::after{left:22px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.metric{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px}
+.metric .val{font-size:24px;font-weight:700}
+.metric .lbl{font-size:11px;color:var(--text3);margin-top:4px}
+.cat-section{margin-bottom:20px}
+.cat-title{font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+color:var(--purple);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.cat-title .badge{background:rgba(127,111,232,.15);padding:2px 8px;border-radius:10px;font-size:10px}
+.model-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.model-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;
+transition:.2s;cursor:pointer}
+.model-card:hover{border-color:var(--purple)}
+.model-card.best{border-color:var(--teal);background:rgba(29,158,117,.06)}
+.model-name{font-size:13px;font-weight:600;font-family:'SF Mono',monospace}
+.model-meta{font-size:11px;color:var(--text3);margin-top:6px;display:flex;gap:12px}
+.best-tag{font-size:9px;background:var(--teal);color:#000;padding:1px 6px;border-radius:8px;font-weight:700}
+.routing{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:24px}
+.routing h2{font-size:13px;margin-bottom:12px}
+.route-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.route-row:last-child{border:none}
+.route-task{color:var(--text2)}
+.route-model{font-family:'SF Mono',monospace;color:var(--teal)}
+.empty{text-align:center;padding:40px;color:var(--text3)}
+.install-hint{background:rgba(239,159,39,.08);border:1px solid var(--amber);border-radius:8px;
+padding:14px;margin-top:16px;font-size:12px}
+.install-hint code{background:#000;padding:2px 8px;border-radius:4px;color:var(--amber);
+font-family:'SF Mono',monospace;display:inline-block;margin:3px 0}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <h1>🧠 AMRIT Model Manager</h1>
+    <div class="sub">Dynamic Local Model Loader · v4.5</div>
+  </div>
+  <div class="status">
+    <div class="dot" id="ollama-dot"></div>
+    <span id="ollama-status">ਚੈੱਕ ਕਰ ਰਿਹਾ...</span>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn" onclick="loadModels()">🔄 Refresh Models</button>
+  <button class="btn" onclick="window.location='/'">← Dashboard</button>
+  <div class="toggle">
+    Prefer Local Models
+    <div class="switch on" id="local-switch" onclick="toggleLocal()"></div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="metric"><div class="val" id="m-total">—</div><div class="lbl">TOTAL MODELS</div></div>
+  <div class="metric"><div class="val" id="m-cats">—</div><div class="lbl">CATEGORIES</div></div>
+  <div class="metric"><div class="val" id="m-coding">—</div><div class="lbl">CODING MODELS</div></div>
+  <div class="metric"><div class="val" id="m-vision">—</div><div class="lbl">VISION MODELS</div></div>
+</div>
+
+<div id="content">
+  <div class="empty">Loading models...</div>
+</div>
+
+<div class="routing" id="routing" style="display:none">
+  <h2>📋 Task Routing — ਹਰ ਕੰਮ ਲਈ ਚੁਣਿਆ Model</h2>
+  <div id="routing-rows"></div>
+</div>
+
+<script>
+let preferLocal = true;
+
+async function loadModels(){
+  document.getElementById('content').innerHTML = '<div class="empty">🔄 Scanning Ollama...</div>';
+  try{
+    const r = await fetch('/api/models/available');
+    const data = await r.json();
+    render(data);
+  }catch(e){
+    document.getElementById('content').innerHTML =
+      '<div class="empty">❌ Server ਨਾਲ connect ਨਹੀਂ ਹੋਇਆ। ਕੀ server.py ਚੱਲ ਰਿਹਾ ਹੈ?</div>';
+  }
+}
+
+function render(data){
+  // Status
+  const dot = document.getElementById('ollama-dot');
+  const status = document.getElementById('ollama-status');
+  if(data.ollama_online){
+    dot.className = 'dot on';
+    status.textContent = `Ollama ਚੱਲ ਰਿਹਾ — ${data.total_models} models`;
+  }else{
+    dot.className = 'dot';
+    status.textContent = 'Ollama offline';
+  }
+
+  // Metrics
+  document.getElementById('m-total').textContent = data.total_models;
+  const cats = Object.keys(data.by_category||{});
+  document.getElementById('m-cats').textContent = cats.length;
+  document.getElementById('m-coding').textContent = (data.by_category?.coding||[]).length;
+  document.getElementById('m-vision').textContent = (data.by_category?.vision||[]).length;
+
+  // Empty state
+  if(data.total_models === 0){
+    document.getElementById('content').innerHTML = `
+      <div class="install-hint">
+        <strong>⚠️ ਕੋਈ local model ਨਹੀਂ ਮਿਲਿਆ</strong><br><br>
+        ਪਹਿਲਾਂ Ollama ਚਾਲੂ ਕਰੋ:<br>
+        <code>ollama serve</code><br><br>
+        ਫਿਰ ਇਹ models install ਕਰੋ (ਹਰ task ਲਈ):<br>
+        <code>ollama pull qwen3:8b</code> — reasoning<br>
+        <code>ollama pull deepseek-coder-v2</code> — coding<br>
+        <code>ollama pull llama3.2</code> — fast tasks<br>
+        <code>ollama pull nomic-embed-text</code> — memory<br>
+        <code>ollama pull moondream</code> — image analysis<br><br>
+        ਫਿਰ <strong>🔄 Refresh</strong> ਦਬਾਓ — ਆਪੇ ਲੱਭ ਜਾਣਗੇ!
+      </div>`;
+    document.getElementById('routing').style.display = 'none';
+    return;
+  }
+
+  // Model cards by category
+  const catLabels = {
+    deep_reasoning:'🧠 Deep Reasoning', coding:'💻 Coding',
+    fast_tasks:'⚡ Fast Tasks', research:'🔬 Research',
+    planning:'📋 Planning', embedding:'🔗 Embeddings', vision:'👁️ Vision'
+  };
+  let html = '';
+  const routing = data.task_routing || {};
+  const bestModels = new Set(Object.values(routing));
+
+  for(const [cat, models] of Object.entries(data.by_category||{})){
+    if(!models.length) continue;
+    html += `<div class="cat-section">
+      <div class="cat-title">${catLabels[cat]||cat} <span class="badge">${models.length}</span></div>
+      <div class="model-grid">`;
+    for(const name of models){
+      const info = (data.all_models||[]).find(m=>m.name===name)||{};
+      const isBest = bestModels.has(name);
+      html += `<div class="model-card ${isBest?'best':''}">
+        <div class="model-name">${name} ${isBest?'<span class="best-tag">BEST</span>':''}</div>
+        <div class="model-meta">
+          <span>📦 ${info.size_gb||'?'} GB</span>
+          <span>⚙️ ${info.params_b||'?'}B params</span>
+        </div>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+  document.getElementById('content').innerHTML = html;
+
+  // Routing table
+  const taskLabels = {
+    deep_reasoning:'Deep Reasoning', coding:'Coding', fast_tasks:'Fast Tasks',
+    research:'Research', planning:'Planning', embedding:'Embeddings',
+    vision:'Vision', medical:'Medical Analysis', general:'General Chat'
+  };
+  let rows = '';
+  for(const [task, model] of Object.entries(routing)){
+    rows += `<div class="route-row">
+      <span class="route-task">${taskLabels[task]||task}</span>
+      <span class="route-model">${model||'— ਕੋਈ ਨਹੀਂ —'}</span>
+    </div>`;
+  }
+  document.getElementById('routing-rows').innerHTML = rows;
+  document.getElementById('routing').style.display = 'block';
+}
+
+function toggleLocal(){
+  preferLocal = !preferLocal;
+  document.getElementById('local-switch').className = 'switch' + (preferLocal?' on':'');
+}
+
+loadModels();
+setInterval(loadModels, 30000); // auto-refresh every 30s
+</script>
+</body>
+</html>

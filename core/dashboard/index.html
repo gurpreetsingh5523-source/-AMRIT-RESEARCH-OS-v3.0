@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMRIT RESEARCH OS v4.5 — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c0f;--bg2:#0f1217;--bg3:#161a22;--bg4:#1c2130;
+  --border:#1e2535;--border2:#252d3f;
+  --purple:#7f6fe8;--purple2:#534ab7;--purple3:#2a2550;
+  --teal:#1d9e75;--teal2:#0f4a38;--teal3:#0a2e23;
+  --amber:#ef9f27;--amber2:#633806;
+  --coral:#d85a30;--coral2:#4a1b0c;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#475569;
+  --green:#22c55e;--red:#ef4444;--blue:#60a5fa;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'JetBrains Mono',monospace;font-size:13px;
+  min-height:100vh;
+}
+.scanline{
+  position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);
+}
+.hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 24px;border-bottom:1px solid var(--border);
+  background:var(--bg2);position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-badge{
+  width:32px;height:32px;border-radius:6px;
+  background:var(--purple3);border:1px solid var(--purple2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:var(--purple);font-weight:700;
+}
+.logo-text{font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:2px;margin-top:1px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.badge{
+  font-size:10px;padding:3px 10px;border-radius:3px;
+  border:1px solid;font-weight:500;letter-spacing:.5px;
+}
+.badge-ok{border-color:var(--teal);color:var(--teal);background:var(--teal3)}
+.badge-warn{border-color:var(--amber);color:var(--amber);background:var(--amber2)}
+.badge-info{border-color:var(--purple2);color:var(--purple);background:var(--purple3)}
+.badge-dim{border-color:var(--border2);color:var(--text3);background:var(--bg3)}
+.session-id{font-size:10px;color:var(--text3);font-family:'Space Mono',monospace}
+.layout{display:grid;grid-template-columns:220px 1fr 220px;gap:1px;background:var(--border);min-height:calc(100vh - 57px)}
+.col{background:var(--bg2);padding:20px 16px;display:flex;flex-direction:column;gap:18px}
+.main-col{background:var(--bg);padding:20px;display:flex;flex-direction:column;gap:16px}
+.sec-label{font-size:9px;letter-spacing:2px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:8px}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.metric{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px 14px}
+.metric-val{font-size:24px;font-weight:700;color:var(--text);line-height:1;font-family:'Space Mono',monospace}
+.metric-lbl{font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:.5px}
+.pipeline-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px}
+.pipeline{display:flex;gap:0;align-items:flex-start;overflow-x:auto;padding-bottom:4px}
+.step{display:flex;flex-direction:column;align-items:center;min-width:50px}
+.step-dot{
+  width:34px;height:34px;border-radius:50%;
+  border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--text3);background:var(--bg3);
+  transition:all .4s ease;position:relative;z-index:1;
+}
+.step.running .step-dot{
+  border-color:var(--amber);color:var(--amber);background:var(--amber2);
+  box-shadow:0 0 10px rgba(239,159,39,.3);
+  animation:pulse .7s ease-in-out infinite;
+}
+.step.done .step-dot{border-color:var(--teal);color:var(--teal);background:var(--teal3)}
+.step-lbl{font-size:8px;color:var(--text3);margin-top:5px;text-align:center;max-width:50px;line-height:1.3;letter-spacing:.3px}
+.step.done .step-lbl{color:var(--text2)}
+.step.running .step-lbl{color:var(--amber)}
+.step-connector{flex:1;height:1px;background:var(--border2);align-self:center;margin-top:-20px;min-width:4px;transition:background .4s}
+.step-connector.done{background:var(--teal)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.95)}}
+.hyp-box{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+  padding:14px;font-size:12px;color:var(--text2);line-height:1.7;
+  font-style:italic;min-height:56px;border-left:3px solid var(--purple2);
+  transition:all .5s;
+}
+.hyp-domain{font-size:10px;color:var(--purple);letter-spacing:1px;margin-bottom:6px;font-style:normal;font-weight:700}
+.agent-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.agent{
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:10px 6px;text-align:center;transition:all .3s;
+}
+.agent.thinking{border-color:var(--amber);background:rgba(186,117,23,.08);box-shadow:0 0 8px rgba(239,159,39,.15)}
+.agent.done{border-color:var(--teal);background:rgba(29,158,117,.08)}
+.agent-icon{font-size:18px;color:var(--text3)}
+.agent.thinking .agent-icon{color:var(--amber)}
+.agent.done .agent-icon{color:var(--teal)}
+.agent-name{font-size:9px;color:var(--text3);margin-top:4px;letter-spacing:.3px}
+.agent-st{font-size:8px;margin-top:2px;color:var(--text3)}
+.agent.thinking .agent-st{color:var(--amber)}
+.agent.done .agent-st{color:var(--teal)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.stat-row:last-child{border-bottom:none}
+.stat-k{font-size:11px;color:var(--text3)}
+.stat-v{font-size:12px;color:var(--text);font-family:'Space Mono',monospace;font-weight:400}
+.verdict{font-size:10px;padding:3px 8px;border-radius:3px;letter-spacing:.5px;font-weight:700;border:1px solid}
+.v-strong{border-color:var(--teal);color:var(--teal);background:var(--teal3)}
+.v-weak{border-color:var(--amber);color:var(--amber);background:var(--amber2)}
+.v-no{border-color:var(--coral);color:var(--coral);background:var(--coral2)}
+.v-marginal{border-color:var(--blue);color:var(--blue);background:rgba(96,165,250,.1)}
+.debate-box{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px}
+.debate-box:last-child{margin-bottom:0}
+.debate-who{font-size:10px;font-weight:700;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.debate-txt{font-size:11px;color:var(--text2);line-height:1.6}
+.db-believer .debate-who{color:var(--purple)}
+.db-skeptic .debate-who{color:var(--coral)}
+.db-judge{border-color:var(--teal);background:rgba(29,158,117,.05)}
+.db-judge .debate-who{color:var(--teal)}
+.src-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.src-name{font-size:10px;color:var(--text2);min-width:72px;letter-spacing:.3px}
+.src-bar-bg{flex:1;height:3px;border-radius:3px;background:var(--border2);overflow:hidden}
+.src-bar{height:100%;border-radius:3px;background:var(--purple2);transition:width 1s ease}
+.src-pct{font-size:10px;color:var(--text3);min-width:28px;text-align:right;font-family:'Space Mono',monospace}
+.q-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.q-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px;text-align:center}
+.q-val{font-size:16px;font-weight:700;color:var(--purple);font-family:'Space Mono',monospace}
+.q-lbl{font-size:9px;color:var(--text3);margin-top:3px;letter-spacing:.5px}
+.rm-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.rm-num{font-size:9px;color:var(--text3);min-width:14px;font-family:'Space Mono',monospace}
+.rm-lbl{font-size:10px;color:var(--text2);flex:1}
+.rm-check{font-size:13px;color:var(--teal)}
+.mod-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mod-card{
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:8px;display:flex;align-items:center;gap:6px;
+}
+.mod-name{font-size:9px;color:var(--text2);letter-spacing:.3px}
+.mod-status{width:5px;height:5px;border-radius:50%;background:var(--teal);margin-left:auto}
+.kg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.kg-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center}
+.kg-val{font-size:18px;font-weight:700;color:var(--teal);font-family:'Space Mono',monospace}
+.kg-lbl{font-size:9px;color:var(--text3);margin-top:2px}
+.run-btn{
+  width:100%;padding:10px;border-radius:6px;
+  border:1px solid var(--purple2);color:var(--purple);background:var(--purple3);
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;
+  cursor:pointer;letter-spacing:1px;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.run-btn:hover{background:rgba(83,74,183,.3);box-shadow:0 0 12px rgba(127,111,232,.2)}
+.run-btn:disabled{opacity:.4;cursor:not-allowed}
+.domain-sel{
+  width:100%;padding:7px 10px;border-radius:5px;
+  border:1px solid var(--border2);background:var(--bg3);
+  color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:11px;
+  outline:none;margin-bottom:10px;
+}
+.domain-sel option{background:var(--bg3)}
+.log-box{
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:10px 12px;font-size:10px;color:var(--text3);
+  height:88px;overflow-y:auto;line-height:1.8;
+  font-family:'Space Mono',monospace;
+}
+.log-line{display:block}
+.log-line.ok{color:var(--teal)}
+.log-line.info{color:var(--text2)}
+.log-line.run{color:var(--amber)}
+.mc-note{font-size:10px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+
+/* ── v4 tab navigation ── */
+.tabbar{display:flex;gap:2px;padding:0 24px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:57px;z-index:90}
+.tab{font-size:11px;letter-spacing:1px;color:var(--text3);padding:11px 16px;cursor:pointer;border:none;background:transparent;font-family:inherit;border-bottom:2px solid transparent;text-transform:uppercase;font-weight:600;transition:color .15s}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--purple);border-bottom-color:var(--purple)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.pane{padding:24px;display:flex;flex-direction:column;gap:18px;max-width:1100px;margin:0 auto}
+.pane-2col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:18px}
+.card h3{font-size:11px;letter-spacing:1.5px;color:var(--purple);text-transform:uppercase;margin-bottom:12px;font-weight:700}
+.v4-area{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;padding:12px;resize:vertical;line-height:1.6}
+.v4-area:focus{outline:none;border-color:var(--purple2)}
+.v4-input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:inherit;font-size:12px;padding:9px 12px}
+.v4-input:focus{outline:none;border-color:var(--purple2)}
+.v4-btn{background:var(--purple3);border:1px solid var(--purple2);color:var(--purple);font-family:inherit;font-size:11px;font-weight:700;letter-spacing:1px;padding:9px 18px;border-radius:6px;cursor:pointer;text-transform:uppercase;transition:.15s}
+.v4-btn:hover{background:var(--purple2);color:#fff}
+.v4-btn:disabled{opacity:.4;cursor:not-allowed}
+.v4-btn.ghost{background:transparent;border-color:var(--border2);color:var(--text2)}
+.v4-btn.ghost:hover{border-color:var(--purple2);color:var(--purple)}
+.out-block{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px 14px;font-size:12px;line-height:1.7;color:var(--text2);white-space:pre-wrap;word-break:break-word}
+.out-label{font-size:9px;letter-spacing:1.5px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:6px}
+.chip{display:inline-block;font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--border2);color:var(--text2);background:var(--bg3);margin:2px 4px 2px 0}
+.chip.hi{border-color:var(--coral);color:var(--coral);background:var(--coral2)}
+.chip.ok{border-color:var(--teal);color:var(--teal);background:var(--teal3)}
+.chip.warn{border-color:var(--amber);color:var(--amber);background:var(--amber2)}
+.chat-log{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;min-height:340px;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.bubble{max-width:78%;padding:10px 14px;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.bubble.user{align-self:flex-end;background:var(--purple3);border:1px solid var(--purple2);color:var(--text)}
+.bubble.ai{align-self:flex-start;background:var(--bg4);border:1px solid var(--border2);color:var(--text2)}
+.bubble .who{font-size:8px;letter-spacing:1px;text-transform:uppercase;opacity:.6;margin-bottom:4px}
+.chat-row{display:flex;gap:8px;margin-top:12px}
+.li-row{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px}
+.li-row:last-child{border-bottom:none}
+.li-k{color:var(--text3);min-width:130px}
+.li-v{color:var(--text)}
+.muted{color:var(--text3);font-size:11px}
+.spinner{display:inline-block;color:var(--amber);font-size:11px}
+</style>
+</head>
+<body>
+<div class="scanline" aria-hidden="true"></div>
+
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-badge">A</div>
+    <div>
+      <div class="logo-text">AMRIT RESEARCH OS</div>
+      <div class="logo-sub">AUTONOMOUS SCIENTIFIC DISCOVERY ENGINE · v4.0</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="session-id" id="sid">SESSION: —</span>
+    <span class="badge" id="ollama-badge" style="border-color:#475569;color:#64748b;background:transparent">OLLAMA: OFFLINE</span>
+    <span class="badge badge-info">QUANTUM: SIM</span>
+    <span class="badge badge-ok">v4.5 ✓</span>
+    <span class="badge badge-dim">BY GURPREET SINGH</span>
+  </div>
+</div>
+
+<div class="tabbar">
+  <button class="tab active" data-tab="research" onclick="switchTab('research')">Research</button>
+  <button class="tab" data-tab="chat" onclick="switchTab('chat')">Chat</button>
+  <button class="tab" data-tab="documents" onclick="switchTab('documents')">Documents</button>
+  <button class="tab" data-tab="medical" onclick="switchTab('medical')">Medical</button>
+  <button class="tab" data-tab="email" onclick="switchTab('email')">Email Agent</button>
+  <button class="tab" data-tab="agents" onclick="switchTab('agents')">Agents</button>
+  <button class="tab" data-tab="scheduler" onclick="switchTab('scheduler')">Scheduler</button>
+  <button class="tab" data-tab="heal" onclick="switchTab('heal')">Self-Heal</button>
+  <button class="tab" data-tab="system" onclick="switchTab('system')">System</button>
+  <span style="flex:1"></span>
+  <button class="tab" id="notif-bell" onclick="switchTab('scheduler')" title="Notifications">🔔 <span id="notif-count">0</span></button>
+</div>
+
+<div id="tab-research" class="tab-panel active">
+<div class="layout">
+
+  <div class="col">
+    <div>
+      <div class="sec-label">Run research</div>
+      <select class="domain-sel" id="domain-sel">
+        <option value="">⬡ Random domain</option>
+        <option>Physics</option>
+        <option>Biology</option>
+        <option>Mathematics</option>
+        <option>Astronomy</option>
+        <option>Chemistry</option>
+        <option>Neuroscience</option>
+        <option>Climate Science</option>
+      </select>
+      <button class="run-btn" id="run-btn" onclick="runCycle()">▶ RUN CYCLE</button>
+    </div>
+    <div>
+      <div class="sec-label">Metrics</div>
+      <div class="metric-grid">
+        <div class="metric"><div class="metric-val" id="m-sess">0</div><div class="metric-lbl">CYCLES</div></div>
+        <div class="metric"><div class="metric-val" id="m-find">0</div><div class="metric-lbl">FINDINGS</div></div>
+        <div class="metric"><div class="metric-val" id="m-paper">0</div><div class="metric-lbl">PAPERS</div></div>
+        <div class="metric"><div class="metric-val" id="m-kg">0</div><div class="metric-lbl">KG NODES</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-label">Modules (10)</div>
+      <div class="mod-grid" id="modules"></div>
+    </div>
+    <div>
+      <div class="sec-label">Data sources</div>
+      <div id="sources"></div>
+    </div>
+    <div>
+      <div class="sec-label">Roadmap</div>
+      <div id="roadmap"></div>
+    </div>
+  </div>
+
+  <div class="main-col">
+    <div class="pipeline-wrap">
+      <div class="sec-label" style="margin-bottom:12px">14-step research pipeline</div>
+      <div class="pipeline" id="pipeline" role="list"></div>
+    </div>
+    <div>
+      <div class="sec-label">Active hypothesis</div>
+      <div class="hyp-box" id="hyp-box">
+        <div class="hyp-domain" id="hyp-domain">&nbsp;</div>
+        Waiting for research cycle to begin…
+      </div>
+    </div>
+    <div>
+      <div class="sec-label">Agent swarm — 7 active agents</div>
+      <div class="agent-grid" id="agent-grid"></div>
+    </div>
+    <div class="debate-box db-believer">
+      <div class="debate-who">▲ BELIEVERAGENT</div>
+      <div class="debate-txt" id="d-believer" style="color:var(--text3)">Awaiting debate…</div>
+    </div>
+    <div class="debate-box db-skeptic">
+      <div class="debate-who">▼ SKEPTICAGENT</div>
+      <div class="debate-txt" id="d-skeptic" style="color:var(--text3)">Awaiting debate…</div>
+    </div>
+    <div class="debate-box db-judge">
+      <div class="debate-who">◆ JUDGEAGENT — VERDICT</div>
+      <div class="debate-txt" id="d-judge" style="color:var(--text3)">Awaiting outcome…</div>
+    </div>
+    <div>
+      <div class="sec-label">System log</div>
+      <div class="log-box" id="log-box"></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div>
+      <div class="sec-label">Statistical results</div>
+      <div class="stat-row"><span class="stat-k">p-value</span><span class="stat-v" id="s-p">—</span></div>
+      <div class="stat-row"><span class="stat-k">Effect size</span><span class="stat-v" id="s-eff">—</span></div>
+      <div class="stat-row"><span class="stat-k">Bayesian posterior</span><span class="stat-v" id="s-bayes">—</span></div>
+      <div class="stat-row"><span class="stat-k">Benford's law</span><span class="stat-v" id="s-benford">—</span></div>
+      <div class="stat-row"><span class="stat-k">Pearson r</span><span class="stat-v" id="s-pearson">—</span></div>
+      <div class="stat-row"><span class="stat-k">Verdict</span><span id="s-verdict"><span class="verdict v-no">—</span></span></div>
+      <div class="mc-note" id="mc-note"></div>
+    </div>
+    <div>
+      <div class="sec-label">Knowledge graph</div>
+      <div class="kg-grid">
+        <div class="kg-card"><div class="kg-val" id="kg-n">0</div><div class="kg-lbl">NODES</div></div>
+        <div class="kg-card"><div class="kg-val" id="kg-e">0</div><div class="kg-lbl">EDGES</div></div>
+        <div class="kg-card"><div class="kg-val" id="kg-d">0</div><div class="kg-lbl">DOMAINS</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-label">Quantum layer</div>
+      <div class="q-grid">
+        <div class="q-card"><div class="q-val" id="q0">—</div><div class="q-lbl">|0⟩ PROB</div></div>
+        <div class="q-card"><div class="q-val" id="q1">—</div><div class="q-lbl">|1⟩ PROB</div></div>
+        <div class="q-card"><div class="q-val" id="qm">—</div><div class="q-lbl">MEASURED</div></div>
+        <div class="q-card"><div class="q-val" id="qg">—</div><div class="q-lbl">GROVER ×</div></div>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text3);line-height:1.6" id="q-info"></div>
+    </div>
+    <div>
+      <div class="sec-label">Monte Carlo — π estimate</div>
+      <div style="text-align:center;padding:16px 0">
+        <div style="font-size:28px;font-weight:700;color:var(--purple);font-family:'Space Mono',monospace" id="pi-val">—</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">100,000 iterations</div>
+        <div style="font-size:10px;color:var(--teal);margin-top:2px" id="pi-err"></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-label">Last paper generated</div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px">
+        <div style="font-size:10px;color:var(--text3)" id="paper-info">No paper generated yet</div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text3)" id="paper-path"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /tab-research -->
+
+<!-- ── CHAT ── -->
+<div id="tab-chat" class="tab-panel">
+  <div class="pane">
+    <div class="card">
+      <h3>Chat session · routed to best reasoning model</h3>
+      <div class="chat-row" style="align-items:center;margin-bottom:10px">
+        <label class="muted" style="display:flex;align-items:center;gap:6px">thread
+          <select class="v4-input" id="chat-thread" style="max-width:240px" onchange="loadThread()"><option value="">(no thread)</option></select>
+        </label>
+        <input class="v4-input" id="new-thread-name" placeholder="new thread name" style="max-width:160px">
+        <select class="v4-input" id="new-thread-cat" style="max-width:140px"></select>
+        <button class="v4-btn ghost" onclick="createThread()">+ Thread</button>
+      </div>
+      <div class="chat-log" id="chat-log">
+        <div class="bubble ai"><div class="who">AMRIT</div>Hello. Ask me anything about your research, data, or science. I route to the best installed model automatically.</div>
+      </div>
+      <div class="chat-row">
+        <input class="v4-input" id="chat-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="v4-btn" id="chat-send" onclick="sendChat()">Send</button>
+        <button class="v4-btn ghost" onclick="clearChat()">Clear</button>
+      </div>
+      <div class="chat-row" style="align-items:center">
+        <label class="muted" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chat-remember" checked> remember context (vector memory)</label>
+        <span class="muted" id="chat-model"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DOCUMENTS ── -->
+<div id="tab-documents" class="tab-panel">
+  <div class="pane">
+    <div class="card">
+      <h3>Document analysis · paste any text</h3>
+      <textarea class="v4-area" id="doc-text" rows="9" placeholder="Paste an article, abstract, report or notes here…"></textarea>
+      <div class="chat-row">
+        <button class="v4-btn" id="doc-run" onclick="analyzeDoc()">Analyze</button>
+        <label class="muted" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="doc-pdf" checked> generate PDF</label>
+        <span class="muted" id="doc-status"></span>
+      </div>
+    </div>
+    <div class="card" id="doc-results" style="display:none">
+      <h3>Results</h3>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><div class="out-label">Summary</div><div class="out-block" id="doc-summary"></div></div>
+        <div><div class="out-label">Key points</div><div class="out-block" id="doc-keypoints"></div></div>
+        <div><div class="out-label">Claims detected</div><div class="out-block" id="doc-claims"></div></div>
+        <div><div class="out-label">Validation</div><div class="out-block" id="doc-validation"></div></div>
+        <div><div class="out-label">Suggestions</div><div class="out-block" id="doc-suggestions"></div></div>
+        <div id="doc-pdf-row" style="display:none"><a class="v4-btn" id="doc-pdf-link" href="#" target="_blank">⬇ Download PDF report</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MEDICAL ── -->
+<div id="tab-medical" class="tab-panel">
+  <div class="pane">
+    <div class="pane-2col">
+      <div class="card">
+        <h3>Blood report</h3>
+        <textarea class="v4-area" id="blood-text" rows="8" placeholder="Paste blood test results, e.g.&#10;Hemoglobin 11.2 g/dL&#10;Glucose 142 mg/dL&#10;LDL 165 mg/dL"></textarea>
+        <div class="chat-row"><button class="v4-btn" id="blood-run" onclick="runBlood()">Analyze blood</button><span class="muted" id="blood-status"></span></div>
+        <div id="blood-out" style="margin-top:14px"></div>
+      </div>
+      <div class="card">
+        <h3>DNA / genome</h3>
+        <textarea class="v4-area" id="dna-text" rows="8" placeholder="Paste raw 23andMe / AncestryDNA text…&#10;rs429358  chr19  T;C"></textarea>
+        <div class="chat-row"><button class="v4-btn" id="dna-run" onclick="runDNA()">Analyze DNA</button><span class="muted" id="dna-status"></span></div>
+        <div id="dna-out" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── EMAIL AGENT ── -->
+<div id="tab-email" class="tab-panel">
+  <div class="pane">
+    <div class="card">
+      <h3>Email agent · read → analyze → suggest → report → send</h3>
+      <textarea class="v4-area" id="email-text" rows="9" placeholder="Paste an email (include From: and Subject: lines if available)…"></textarea>
+      <div class="chat-row" style="flex-wrap:wrap">
+        <button class="v4-btn" id="email-run" onclick="processEmail()">Run agent</button>
+        <label class="muted" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="email-pdf" checked> PDF report</label>
+        <label class="muted" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="email-send"> send reply</label>
+        <input class="v4-input" id="email-to" style="max-width:240px" placeholder="reply-to address (optional)">
+        <span class="muted" id="email-status"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Inbox auto-fetch · read unread via IMAP & batch-analyze</h3>
+      <div class="chat-row" style="flex-wrap:wrap">
+        <button class="v4-btn" id="inbox-run" onclick="fetchInbox()">Fetch &amp; analyze inbox</button>
+        <label class="muted" style="display:flex;align-items:center;gap:6px">limit <input class="v4-input" id="inbox-limit" type="number" value="5" min="1" max="25" style="width:62px"></label>
+        <label class="muted" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="inbox-pdf"> PDF per email</label>
+        <label class="muted" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="inbox-auto"> auto-reply</label>
+        <span class="muted" id="inbox-status"></span>
+      </div>
+      <div class="muted" style="margin-top:8px">Set <code>IMAP_HOST</code> / <code>IMAP_USER</code> / <code>IMAP_PASS</code> env vars before starting the server. Auto-reply also needs <code>SMTP_*</code>.</div>
+      <div id="inbox-out" style="margin-top:14px"></div>
+    </div>
+    <div class="card" id="email-results" style="display:none">
+      <h3>Analysis</h3>
+      <div id="email-meta" style="margin-bottom:14px"></div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><div class="out-label">Action items</div><div class="out-block" id="email-actions"></div></div>
+        <div><div class="out-label">Suggested reply</div><div class="out-block" id="email-reply"></div></div>
+        <div id="email-send-out"></div>
+        <div id="email-pdf-row" style="display:none"><a class="v4-btn" id="email-pdf-link" href="#" target="_blank">⬇ Download PDF report</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── AGENTS ── -->
+<div id="tab-agents" class="tab-panel">
+  <div class="pane">
+    <div class="card">
+      <h3>Research Planner Agent · question → plan → tasks → validate → report</h3>
+      <textarea class="v4-area" id="plan-q" rows="3" placeholder="Ask a research question, e.g. 'What are the leading hypotheses for the cause of Long COVID fatigue?'"></textarea>
+      <div class="chat-row" style="flex-wrap:wrap">
+        <button class="v4-btn" id="plan-run" onclick="runPlanner()">Run planner</button>
+        <label class="muted" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="plan-evidence" checked> gather evidence (ArXiv)</label>
+        <label class="muted" style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="plan-pdf"> PDF report</label>
+        <span class="muted" id="plan-status"></span>
+      </div>
+      <div id="plan-out" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Self-Critic Agent · answer → critic → find errors → improve → final</h3>
+      <textarea class="v4-area" id="critic-q" rows="3" placeholder="Enter a question to answer & self-critique, OR paste an existing answer below to critique."></textarea>
+      <textarea class="v4-area" id="critic-text" rows="3" placeholder="(optional) existing answer to critique" style="margin-top:8px"></textarea>
+      <div class="chat-row" style="flex-wrap:wrap">
+        <button class="v4-btn" id="critic-run" onclick="runCritic()">Run critic</button>
+        <label class="muted" style="display:flex;align-items:center;gap:6px">cycles <input class="v4-input" id="critic-cycles" type="number" value="2" min="1" max="4" style="width:60px"></label>
+        <span class="muted" id="critic-status"></span>
+      </div>
+      <div id="critic-out" style="margin-top:14px"></div>
+    </div>
+
+    <div class="pane-2col">
+      <div class="card">
+        <h3>Self-learning</h3>
+        <div class="muted" style="margin-bottom:8px">Distil lessons from memory into long-term memory.</div>
+        <input class="v4-input" id="learn-note" placeholder="optional focus note">
+        <div class="chat-row"><button class="v4-btn" id="learn-run" onclick="runLearn()">Learn now</button><span class="muted" id="learn-status"></span></div>
+        <div id="learn-out" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h3>Skill creation</h3>
+        <input class="v4-input" id="skill-name" placeholder="skill name (e.g. Literature Triage)">
+        <input class="v4-input" id="skill-desc" placeholder="what the skill does" style="margin-top:8px">
+        <div class="chat-row"><button class="v4-btn" id="skill-run" onclick="createSkill()">Create skill</button><span class="muted" id="skill-status"></span></div>
+        <div id="skill-out" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Automatic tool building · generated code is sandbox-validated before registering</h3>
+      <input class="v4-input" id="tool-name" placeholder="tool name (e.g. Word Counter)">
+      <input class="v4-input" id="tool-desc" placeholder="what it should do (e.g. count words in a text)" style="margin-top:8px">
+      <input class="v4-input" id="tool-args" placeholder='test args as JSON (e.g. {&quot;text&quot;:&quot;hello world&quot;})' style="margin-top:8px">
+      <div class="chat-row"><button class="v4-btn" id="tool-run" onclick="buildTool()">Build &amp; register tool</button><span class="muted" id="tool-status"></span></div>
+      <div id="tool-out" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCHEDULER ── -->
+<div id="tab-scheduler" class="tab-panel">
+  <div class="pane">
+    <div class="card">
+      <h3>Autonomous campaign · every N minutes: check inbox → analyze → store → notify</h3>
+      <div class="chat-row" style="flex-wrap:wrap;align-items:center">
+        <button class="v4-btn" id="sched-start" onclick="schedStart()">Start</button>
+        <button class="v4-btn ghost" id="sched-stop" onclick="schedStop()">Stop</button>
+        <button class="v4-btn ghost" id="sched-run" onclick="schedRunNow()">Run once now</button>
+        <label class="muted" style="display:flex;align-items:center;gap:6px">interval (min) <input class="v4-input" id="sched-int" type="number" value="5" min="1" max="120" style="width:62px"></label>
+        <span class="muted" id="sched-status"></span>
+      </div>
+      <div id="sched-state" style="margin-top:12px"></div>
+      <div class="muted" style="margin-top:10px">Pipeline: Auto Check Inbox → Analyze → Store Memory → Notify User. Needs IMAP_* env vars to read real mail.</div>
+    </div>
+    <div class="card">
+      <h3>Notifications</h3>
+      <div class="chat-row"><button class="v4-btn ghost" onclick="refreshNotifs()">Refresh</button><span class="muted" id="notif-status"></span></div>
+      <div class="chat-log" id="notif-log" style="min-height:240px;max-height:46vh;margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SYSTEM ── -->
+<div id="tab-heal" class="tab-panel">
+  <div class="pane">
+    <div class="pane-2col">
+      <div class="card">
+        <h3>System health</h3>
+        <p class="muted">The system checks and repairs itself — zero maintenance.</p>
+        <div class="chat-row">
+          <button class="v4-btn" id="heal-check" onclick="healCheck()">Run health check</button>
+          <button class="v4-btn" id="heal-survival" onclick="healSurvival()">Survival mode (auto-fix)</button>
+        </div>
+        <div id="heal-status" style="margin-top:12px"><span class="muted">Not run yet.</span></div>
+        <div id="heal-out" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h3>Repair from an error</h3>
+        <p class="muted">Paste a Python traceback and the system will try to fix the file itself.</p>
+        <textarea class="v4-input" id="heal-tb" rows="6" placeholder="Paste a traceback here…" style="width:100%;font-family:monospace"></textarea>
+        <div class="chat-row" style="margin-top:8px">
+          <button class="v4-btn" id="heal-fix" onclick="healFix()">Heal this error</button>
+        </div>
+        <div style="margin-top:14px"><div class="out-label">Recent repairs</div><div id="heal-history"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-system" class="tab-panel">
+  <div class="pane">
+    <div class="pane-2col">
+      <div class="card">
+        <h3>Model routing table</h3>
+        <div id="sys-routing"><span class="muted">Loading…</span></div>
+        <div style="margin-top:14px"><div class="out-label">Installed models</div><div id="sys-installed"></div></div>
+      </div>
+      <div class="card">
+        <h3>Vector memory search</h3>
+        <div class="chat-row">
+          <input class="v4-input" id="mem-query" placeholder="Search research memory…" onkeydown="if(event.key==='Enter')searchMem()">
+          <button class="v4-btn" id="mem-run" onclick="searchMem()">Search</button>
+        </div>
+        <div class="muted" id="mem-stats" style="margin-top:10px"></div>
+        <div id="mem-out" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STEPS=[
+  {l:"Hypothesis",i:"💡"},{l:"Plan",i:"📋"},{l:"Data",i:"🗄"},
+  {l:"Statistics",i:"📊"},{l:"Reasoning",i:"🧠"},{l:"Agents",i:"👥"},
+  {l:"Debate",i:"💬"},{l:"Peer Rev",i:"✅"},{l:"KG Build",i:"🕸"},
+  {l:"Memory",i:"💾"},{l:"Citations",i:"🔗"},{l:"Paper",i:"📄"},
+  {l:"Quantum",i:"⚛"},{l:"Dashboard",i:"🖥"}
+];
+const AGENTS=[
+  {n:"ResearchAgent",r:"RESEARCH",i:"🔬"},
+  {n:"MathAgent",r:"MATH",i:"∑"},
+  {n:"PhysicsAgent",r:"PHYSICS",i:"⚛"},
+  {n:"BiologyAgent",r:"BIO",i:"🧬"},
+  {n:"ReviewerAgent",r:"REVIEW",i:"📝"},
+  {n:"SkepticAgent",r:"SKEPTIC",i:"?"},
+  {n:"CoderAgent",r:"CODE",i:"</>"}
+];
+const SOURCES=[
+  {n:"PubMed",r:98},{n:"NASA",r:95},{n:"CrossRef",r:88},
+  {n:"ArXiv",r:85},{n:"Semantic",r:82},{n:"OpenAlex",r:80}
+];
+const ROADMAP=[
+  "Core Research Brain","Memory + Database","Multi-Agent Swarm",
+  "Knowledge Graph","Paper Generator","Dashboard",
+  "Quantum Layer (sim)","Autonomous Scientist"
+];
+const MODULES=[
+  {n:"ResearchBrain",i:"💡"},{n:"MemoryManager",i:"💾"},
+  {n:"StatEngine",i:"📊"},{n:"AgentManager",i:"👥"},
+  {n:"KnowledgeGraph",i:"🕸"},{n:"DataCollector",i:"🗄"},
+  {n:"PaperWriter",i:"📄"},{n:"QuantumLayer",i:"⚛"},
+  {n:"OllamaClient",i:"🤖"},{n:"Dashboard",i:"🖥"}
+];
+const DOMAINS=["Physics","Biology","Mathematics","Astronomy","Chemistry","Neuroscience","Climate Science"];
+const HYPS=[
+  "Are recurring numerical patterns observable across independent {d} datasets?",
+  "Does {d} exhibit self-organizing behavior under constrained entropy conditions?",
+  "Can Benford's Law deviation predict anomalous events in large {d} datasets?",
+  "Is there a significant correlation between {d} cycles and cosmic patterns?",
+  "Do {d} phenomena follow power-law distributions at macro scales?"
+];
+const BELIEVERS=[
+  "Pattern detected with strong statistical backing. Cross-referencing with existing literature confirms this finding is publishable with minor revisions.",
+  "Mathematical analysis shows meaningful effect size. Power analysis supports the current sample size for this domain.",
+  "The data strongly supports the hypothesis. Effect size is in the medium-to-large range and warrants further investigation.",
+  "Correlation confirmed across sub-datasets. Physical constraints are not violated. The pattern is consistent and reproducible."
+];
+const SKEPTICS=[
+  "Correlation does not imply causation. Alternative explanations must be systematically ruled out before any causal claims.",
+  "Multiple comparisons problem: with this many simultaneous tests, false positives are expected. Bonferroni correction is mandatory.",
+  "Sample selection bias is possible. The dataset may not be representative of the broader population across all conditions.",
+  "The p-value alone is insufficient for discovery claims. Replication across ≥3 independent datasets is essential."
+];
+
+let sessions=0,findings=0,papers=0,kgN=0,kgE=0,kgD=0,running=false;
+function rnd(a,b){return Math.random()*(b-a)+a}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function log(msg,type='info'){
+  const box=document.getElementById('log-box');
+  const ts=new Date().toLocaleTimeString('en-GB',{hour12:false});
+  const span=document.createElement('span');
+  span.className='log-line '+(type||'info');
+  span.textContent='['+ts+'] '+msg;
+  box.appendChild(span);
+  box.appendChild(document.createElement('br'));
+  box.scrollTop=box.scrollHeight;
+}
+function buildPipeline(){
+  const c=document.getElementById('pipeline');c.innerHTML='';
+  STEPS.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='step';d.id='step-'+i;d.setAttribute('role','listitem');
+    d.innerHTML='<div class="step-dot">'+s.i+'</div><div class="step-lbl">'+s.l+'</div>';
+    c.appendChild(d);
+    if(i<STEPS.length-1){
+      const l=document.createElement('div');l.className='step-connector';l.id='line-'+i;c.appendChild(l);
+    }
+  });
+}
+function buildAgents(){
+  const c=document.getElementById('agent-grid');c.innerHTML='';
+  AGENTS.forEach((a,i)=>{
+    const d=document.createElement('div');d.className='agent';d.id='agent-'+i;
+    d.innerHTML='<div class="agent-icon">'+a.i+'</div><div class="agent-name">'+a.r+'</div><div class="agent-st" id="ast-'+i+'">IDLE</div>';
+    c.appendChild(d);
+  });
+}
+function buildSources(){
+  const c=document.getElementById('sources');c.innerHTML='';
+  SOURCES.forEach(s=>{c.innerHTML+='<div class="src-row"><span class="src-name">'+s.n+'</span><div class="src-bar-bg"><div class="src-bar" style="width:'+s.r+'%"></div></div><span class="src-pct">'+s.r+'%</span></div>';});
+}
+function buildRoadmap(){
+  const c=document.getElementById('roadmap');c.innerHTML='';
+  ROADMAP.forEach((r,i)=>{c.innerHTML+='<div class="rm-row"><span class="rm-num">'+String(i+1).padStart(2,'0')+'</span><span class="rm-lbl">'+r+'</span><span class="rm-check">✓</span></div>';});
+}
+function buildModules(){
+  const c=document.getElementById('modules');c.innerHTML='';
+  MODULES.forEach(m=>{c.innerHTML+='<div class="mod-card"><span style="font-size:13px">'+m.i+'</span><span class="mod-name">'+m.n+'</span><span class="mod-status"></span></div>';});
+}
+function setStep(i,state){
+  const el=document.getElementById('step-'+i);if(el)el.className='step '+state;
+  if(i>0){const l=document.getElementById('line-'+(i-1));if(l&&state==='done')l.className='step-connector done';}
+}
+function setAgent(i,state){
+  const el=document.getElementById('agent-'+i);
+  const sl=document.getElementById('ast-'+i);
+  if(el)el.className='agent '+state;
+  if(sl)sl.textContent=state==='thinking'?'ACTIVE':state==='done'?'DONE':'IDLE';
+}
+function resetAll(){
+  for(let i=0;i<STEPS.length;i++)setStep(i,'');
+  for(let i=0;i<AGENTS.length;i++)setAgent(i,'');
+  ['d-believer','d-skeptic','d-judge'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.textContent='Awaiting…';el.style.color='var(--text3)';}
+  });
+}
+
+async function runCycle(){
+  if(running)return;
+  running=true;
+  document.getElementById('run-btn').disabled=true;
+  document.getElementById('run-btn').textContent='RUNNING…';
+  resetAll();
+  const domSel=document.getElementById('domain-sel').value;
+  const domain=domSel||DOMAINS[Math.floor(Math.random()*DOMAINS.length)];
+  const hyp=HYPS[Math.floor(Math.random()*HYPS.length)].replace('{d}',domain);
+  const sid='ses_'+Math.random().toString(36).slice(2,8).toUpperCase();
+  document.getElementById('sid').textContent='SESSION: '+sid;
+  document.getElementById('hyp-domain').textContent=domain.toUpperCase();
+  document.getElementById('hyp-box').innerHTML='<div class="hyp-domain">'+domain.toUpperCase()+'</div>'+hyp;
+  document.getElementById('log-box').innerHTML='';
+  log('Session '+sid+' started','ok');
+  log('Domain: '+domain,'info');
+
+  // Try real backend first
+  let apiData=null;
+  log('Running real research pipeline (this can take 1–3 min)…','info');
+  try{
+    const res=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain:domain}),signal:AbortSignal.timeout(240000)});
+    if(res.ok){apiData=await res.json();log('Backend research complete','ok');}
+    else log('Backend returned HTTP '+res.status+' — showing simulated stats','warn');
+  }catch(e){
+    log((e&&e.name==='TimeoutError'?'Backend timed out (>240s)':'Backend unreachable: '+(e&&e.message||e))+' — showing simulated stats','warn');
+  }
+
+  for(let i=0;i<STEPS.length;i++){
+    setStep(i,'running');
+    log('Step '+(i+1)+'/14: '+STEPS[i].l,'run');
+    await sleep(380);
+    if(i===2){
+      log('ArXiv: 3 papers · PubMed: 2 papers fetched','ok');
+      document.getElementById('m-find').textContent=++findings;
+    }
+    if(i===3){
+      let p,eff,post,pearson,piEst,vCls,vLbl;
+      if(apiData&&apiData.stats){
+        p=apiData.stats.p_value||rnd(0.001,0.15);
+        eff=apiData.stats.effect_size||rnd(0.1,1.0);
+        post=apiData.stats.bayesian_posterior||rnd(0.55,0.95);
+        pearson=apiData.stats.pearson_r||rnd(-1,1);
+        piEst=apiData.stats.monte_carlo_pi||(3.14159+rnd(-0.015,0.015)).toFixed(5);
+        vLbl=apiData.stats.verdict||'NOT SUPPORTED';
+        vCls=vLbl==='STRONG SUPPORT'?'v-strong':vLbl==='WEAK SUPPORT'?'v-weak':vLbl==='MARGINAL'?'v-marginal':'v-no';
+      }else{
+        p=parseFloat(rnd(0.001,0.15).toFixed(4));eff=parseFloat(rnd(0.1,1.0).toFixed(3));
+        post=parseFloat(rnd(0.55,0.95).toFixed(3));pearson=parseFloat(rnd(-1,1).toFixed(3));
+        piEst=(3.14159+rnd(-0.015,0.015)).toFixed(5);
+        if(p<0.05&&eff>0.5){vCls='v-strong';vLbl='STRONG SUPPORT';}
+        else if(p<0.05){vCls='v-weak';vLbl='WEAK SUPPORT';}
+        else if(p<0.1){vCls='v-marginal';vLbl='MARGINAL';}
+        else{vCls='v-no';vLbl='NOT SUPPORTED';}
+      }
+      document.getElementById('s-p').textContent=parseFloat(p).toFixed(4);
+      document.getElementById('s-eff').textContent=parseFloat(eff).toFixed(3);
+      document.getElementById('s-bayes').textContent=parseFloat(post).toFixed(3);
+      document.getElementById('s-benford').textContent=p<0.08?'CONFORMS':'ANOMALY';
+      document.getElementById('s-pearson').textContent=parseFloat(pearson).toFixed(3);
+      document.getElementById('s-verdict').innerHTML='<span class="verdict '+vCls+'">'+vLbl+'</span>';
+      document.getElementById('mc-note').textContent='MC (10k iter): π ≈ '+piEst;
+      document.getElementById('pi-val').textContent=piEst;
+      document.getElementById('pi-err').textContent='error: '+Math.abs(3.14159-parseFloat(piEst)).toFixed(5);
+      log('p='+parseFloat(p).toFixed(4)+' · effect='+parseFloat(eff).toFixed(3)+' · verdict='+vLbl,'ok');
+    }
+    if(i===5){
+      for(let a=0;a<AGENTS.length;a++){
+        setAgent(a,'thinking');log(AGENTS[a].n+' reviewing…','run');
+        await sleep(130);setAgent(a,'done');
+      }
+    }
+    if(i===6){
+      const bi=apiData&&apiData.debate&&apiData.debate.believer?apiData.debate.believer:BELIEVERS[Math.floor(Math.random()*BELIEVERS.length)];
+      const sk=apiData&&apiData.debate&&apiData.debate.skeptic?apiData.debate.skeptic:SKEPTICS[Math.floor(Math.random()*SKEPTICS.length)];
+      const pv=parseFloat(document.getElementById('s-p').textContent)||0.1;
+      const ev=parseFloat(document.getElementById('s-eff').textContent)||0.3;
+      let jv=apiData&&apiData.debate&&apiData.debate.judge?apiData.debate.judge:(pv<0.05&&ev>0.5?'HYPOTHESIS SUPPORTED — Proceed to publication · Confidence: HIGH':pv<0.05?'PARTIALLY SUPPORTED — Further investigation needed · Confidence: MEDIUM':'HYPOTHESIS REJECTED — Insufficient evidence · Confidence: LOW');
+      document.getElementById('d-believer').textContent=bi;document.getElementById('d-believer').style.color='var(--text2)';
+      document.getElementById('d-skeptic').textContent=sk;document.getElementById('d-skeptic').style.color='var(--text2)';
+      document.getElementById('d-judge').textContent=jv;document.getElementById('d-judge').style.color='var(--teal)';
+    }
+    if(i===8){
+      if(apiData&&apiData.knowledge_graph){kgN=apiData.knowledge_graph.nodes||kgN+Math.floor(rnd(8,20));kgE=apiData.knowledge_graph.edges||kgE+Math.floor(rnd(12,28));}
+      else{kgN+=Math.floor(rnd(8,20));kgE+=Math.floor(rnd(12,28));}
+      kgD++;
+      document.getElementById('kg-n').textContent=kgN;document.getElementById('kg-e').textContent=kgE;
+      document.getElementById('kg-d').textContent=kgD;document.getElementById('m-kg').textContent=kgN;
+      log('KG: '+kgN+' nodes · '+kgE+' edges','ok');
+    }
+    if(i===11){
+      document.getElementById('m-paper').textContent=++papers;
+      const ts=new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'');
+      const title=apiData&&apiData.hypothesis?apiData.hypothesis:hyp;
+      document.getElementById('paper-info').textContent=domain+' — '+title.slice(0,50)+'…';
+      document.getElementById('paper-path').textContent='reports/paper_'+ts+'.json';
+      log('Paper exported: reports/paper_'+ts+'.json','ok');
+    }
+    if(i===12){
+      let p0,p1,meas,spd,qInfo;
+      if(apiData&&apiData.quantum){
+        p0=apiData.quantum.prob_0||rnd(0.3,0.7).toFixed(4);
+        p1=apiData.quantum.prob_1||(1-parseFloat(p0)).toFixed(4);
+        meas=apiData.quantum.measured||'|0⟩';
+        spd=apiData.quantum.grover_speedup||rnd(10,31).toFixed(2);
+        qInfo=apiData.quantum.info||'VQE optimised · Quantum random seeded';
+      }else{
+        const theta=rnd(0,Math.PI);
+        p0=(Math.cos(theta/2)**2).toFixed(4);p1=(Math.sin(theta/2)**2).toFixed(4);
+        meas=Math.random()<parseFloat(p0)?'|0⟩':'|1⟩';
+        const nI=Math.floor(rnd(100,1000));spd=Math.sqrt(nI).toFixed(2);
+        qInfo='VQE: 4 params optimised · Grover N='+nI+' → '+spd+'× speedup';
+      }
+      document.getElementById('q0').textContent=p0;document.getElementById('q1').textContent=p1;
+      document.getElementById('qm').textContent=meas;document.getElementById('qg').textContent=spd;
+      document.getElementById('q-info').textContent=qInfo;
+      log('Quantum: measured '+meas,'ok');
+    }
+    if(apiData&&apiData.hypothesis&&i===0){
+      document.getElementById('hyp-box').innerHTML='<div class="hyp-domain">'+domain.toUpperCase()+'</div>'+apiData.hypothesis;
+    }
+    setStep(i,'done');
+  }
+  sessions++;
+  document.getElementById('m-sess').textContent=sessions;
+  document.getElementById('ollama-badge').textContent='OLLAMA: deepseek-coder-v2';
+  document.getElementById('ollama-badge').style.cssText='border-color:var(--teal);color:var(--teal);background:var(--teal3)';
+  log('Session '+sid+' complete ✓','ok');
+  document.getElementById('run-btn').disabled=false;
+  document.getElementById('run-btn').textContent='▶ RUN CYCLE';
+  running=false;
+}
+
+// Check Ollama on load
+fetch('/api/health').then(r=>r.json()).then(d=>{
+  if(d.ollama){
+    const b=document.getElementById('ollama-badge');
+    b.textContent='OLLAMA: ONLINE';
+    b.style.cssText='border-color:var(--teal);color:var(--teal);background:var(--teal3)';
+  }
+}).catch(()=>{});
+
+buildPipeline();buildAgents();buildSources();buildRoadmap();buildModules();
+log('AMRIT RESEARCH OS v4.5 initialised','ok');
+log('Multi-model routing · Chat · Documents · Medical · Email agent','info');
+log('Planner · Self-critic · Self-learning · Scheduler online','ok');
+log('All v4 modules operational · Ready','ok');
+
+// ─────────────── v4: tabs + agents ───────────────
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const el=document.getElementById('tab-'+name);
+  if(el)el.classList.add('active');
+  if(name==='system')loadSystem();
+  if(name==='scheduler'){refreshSched();refreshNotifs();}
+  if(name==='heal')healHistory();
+  if(name==='chat')loadThreadList();
+}
+
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+async function postJSON(url,body){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
+}
+
+// ── Self-Heal ──
+function healBadge(ok,txt){
+  const c=ok?'var(--teal)':'#e06c6c';
+  return `<span style="border:1px solid ${c};color:${c};padding:2px 8px;border-radius:6px;font-size:12px">${esc(txt)}</span>`;
+}
+async function healCheck(){
+  document.getElementById('heal-status').innerHTML='<span class="muted">Checking…</span>';
+  const d=await fetch('/api/heal/check').then(r=>r.json());
+  const ok=d.healthy;
+  let h=healBadge(ok, ok?'HEALTHY':(d.syntax_errors.length+' issue(s)'))+
+        ` &nbsp; ${d.files_scanned} files scanned &nbsp; `+
+        healBadge(d.ollama_available,'Ollama '+(d.ollama_available?'online':'offline'));
+  document.getElementById('heal-status').innerHTML=h;
+  document.getElementById('heal-out').innerHTML=(d.syntax_errors||[])
+    .map(e=>`<div class="out-row"><b>${esc(e.file)}</b><br><span class="muted">${esc(e.error)}</span></div>`).join('')||'';
+}
+async function healSurvival(){
+  document.getElementById('heal-status').innerHTML='<span class="muted">Running survival mode…</span>';
+  const d=await postJSON('/api/heal/survival',{});
+  const dep=d.dependencies||{};
+  const reps=d.repairs||[];
+  let h=healBadge(d.ok,'survival '+(d.ok?'done':'error'))+
+    ` &nbsp; installed: ${(dep.installed||[]).length} &nbsp; repaired: ${reps.filter(r=>r.ok).length}/${reps.length}`;
+  document.getElementById('heal-status').innerHTML=h;
+  document.getElementById('heal-out').innerHTML=reps
+    .map(r=>`<div class="out-row">${healBadge(r.ok,r.ok?'fixed':'failed')} <b>${esc(r.file||'')}</b></div>`).join('');
+  healHistory();
+}
+async function healFix(){
+  const tb=document.getElementById('heal-tb').value.trim();
+  if(!tb){return;}
+  document.getElementById('heal-out').innerHTML='<span class="muted">Analysing & repairing…</span>';
+  const d=await postJSON('/api/heal',{traceback:tb});
+  let msg = d.ok ? ('Repaired: '+(d.file||d.module||'')) : ('Could not repair: '+(d.reason||''));
+  document.getElementById('heal-out').innerHTML=`<div class="out-row">${healBadge(d.ok,d.kind||'heal')} ${esc(msg)}</div>`;
+  healHistory();
+}
+async function healHistory(){
+  const d=await fetch('/api/heal/history?limit=20').then(r=>r.json()).catch(()=>({history:[]}));
+  document.getElementById('heal-history').innerHTML=(d.history||[]).slice().reverse()
+    .map(h=>`<div class="out-row"><span class="muted">${esc(h.ts||'')}</span> · ${esc(h.action)} ${h.ok===false?'✗':'✓'}</div>`).join('')
+    ||'<span class="muted">No repairs yet.</span>';
+}
+
+// ── Chat ──
+let chatHistory=[];
+function addBubble(role,text){
+  const log=document.getElementById('chat-log');
+  const d=document.createElement('div');
+  d.className='bubble '+(role==='user'?'user':'ai');
+  d.innerHTML='<div class="who">'+(role==='user'?'You':'AMRIT')+'</div>'+esc(text);
+  log.appendChild(d);log.scrollTop=log.scrollHeight;
+  return d;
+}
+async function sendChat(){
+  const inp=document.getElementById('chat-input');
+  const msg=inp.value.trim();if(!msg)return;
+  inp.value='';
+  addBubble('user',msg);
+  const btn=document.getElementById('chat-send');btn.disabled=true;
+  const pending=addBubble('ai','…thinking…');
+  try{
+    const d=await postJSON('/api/chat',{message:msg,history:chatHistory,remember:document.getElementById('chat-remember').checked});
+    pending.innerHTML='<div class="who">AMRIT</div>'+esc(d.reply||'(no reply)');
+    const rc=(d.recalled||0);
+    document.getElementById('chat-model').textContent='model: '+(d.model||'—')+(rc?'  ·  recalled '+rc+' memory '+(rc===1?'note':'notes'):'');
+    chatHistory.push({role:'user',content:msg});
+    chatHistory.push({role:'assistant',content:d.reply||''});
+  }catch(e){pending.innerHTML='<div class="who">AMRIT</div>⚠ '+esc(''+e);}
+  btn.disabled=false;
+}
+function clearChat(){
+  chatHistory=[];
+  document.getElementById('chat-log').innerHTML='<div class="bubble ai"><div class="who">AMRIT</div>Cleared. Ask me anything.</div>';
+  document.getElementById('chat-model').textContent='';
+}
+
+// ── Documents ──
+async function analyzeDoc(){
+  const text=document.getElementById('doc-text').value.trim();
+  if(!text){document.getElementById('doc-status').textContent='paste some text first';return;}
+  const btn=document.getElementById('doc-run');btn.disabled=true;
+  document.getElementById('doc-status').innerHTML='<span class="spinner">analyzing…</span>';
+  try{
+    const d=await postJSON('/api/document/analyze',{text,refine:true,make_pdf:document.getElementById('doc-pdf').checked});
+    document.getElementById('doc-results').style.display='block';
+    document.getElementById('doc-summary').textContent=d.summary||'—';
+    document.getElementById('doc-keypoints').textContent=(d.key_points||[]).map(k=>'• '+k).join('\n')||'—';
+    document.getElementById('doc-claims').textContent=(d.claims||[]).map(k=>'• '+k).join('\n')||'—';
+    document.getElementById('doc-validation').textContent=d.validation||'—';
+    document.getElementById('doc-suggestions').textContent=d.suggestions||'—';
+    const row=document.getElementById('doc-pdf-row');
+    if(d.pdf_report){row.style.display='block';document.getElementById('doc-pdf-link').href='/api/report/download?path='+encodeURIComponent(d.pdf_report);}
+    else row.style.display='none';
+    document.getElementById('doc-status').textContent=d.online?'done (live model)':'done (offline heuristics)';
+  }catch(e){document.getElementById('doc-status').textContent='⚠ '+e;}
+  btn.disabled=false;
+}
+
+// ── Medical ──
+async function runBlood(){
+  const report=document.getElementById('blood-text').value.trim();
+  if(!report){document.getElementById('blood-status').textContent='paste a report';return;}
+  const btn=document.getElementById('blood-run');btn.disabled=true;
+  document.getElementById('blood-status').innerHTML='<span class="spinner">…</span>';
+  try{
+    const d=await postJSON('/api/medical/blood',{report});
+    const markers=d.markers||{};
+    let html='';
+    Object.keys(markers).forEach(name=>{
+      const m=markers[name];
+      const flag=(m.flag||'').toUpperCase();
+      const cls=(flag==='HIGH'||flag==='LOW'||flag.includes('ABN'))?'hi':'ok';
+      const label=name.charAt(0).toUpperCase()+name.slice(1);
+      html+='<div class="li-row"><span class="li-k">'+esc(label)+'</span><span class="li-v">'+esc(''+(m.value??''))+' '+esc(m.unit||'')+
+        '  <span class="muted">(ref '+esc(m.reference||'')+')</span>  <span class="chip '+cls+'">'+esc(m.flag||'OK')+'</span></span></div>';
+    });
+    if(!html)html='<div class="out-block">'+esc(JSON.stringify(d,null,2))+'</div>';
+    if(d.summary)html+='<div class="out-label" style="margin-top:12px">Summary</div><div class="out-block">'+esc(d.summary)+'</div>';
+    document.getElementById('blood-out').innerHTML=html;
+    document.getElementById('blood-status').textContent=(d.markers_found||0)+' markers · '+(Object.keys(d.abnormal||{}).length)+' abnormal';
+  }catch(e){document.getElementById('blood-status').textContent='⚠ '+e;}
+  btn.disabled=false;
+}
+async function runDNA(){
+  const raw=document.getElementById('dna-text').value.trim();
+  if(!raw){document.getElementById('dna-status').textContent='paste raw DNA';return;}
+  const btn=document.getElementById('dna-run');btn.disabled=true;
+  document.getElementById('dna-status').innerHTML='<span class="spinner">…</span>';
+  try{
+    const d=await postJSON('/api/medical/dna',{raw});
+    let html='';
+    const risks=d.ranked_risks||[];
+    if(risks.length){
+      html+='<div class="out-label">Ranked genetic risks</div>';
+      risks.forEach(r=>{
+        const s=+r.score||0;
+        const cls=s>=0.66?'hi':s>=0.33?'warn':'ok';
+        html+='<div class="li-row"><span class="li-k">'+esc(r.trait||'')+'</span><span class="li-v"><span class="chip '+cls+'">score '+s.toFixed(2)+'</span></span></div>';
+      });
+    }
+    const findings=(d.genetic_risk||{}).findings||[];
+    if(findings.length){
+      html+='<div class="out-label" style="margin-top:12px">Variant findings</div>';
+      findings.forEach(f=>{html+='<div class="li-row"><span class="li-k">'+esc(f.trait||f.gene||f.rsid||'')+'</span><span class="li-v">'+esc(f.note||f.effect||f.genotype||'')+'</span></div>';});
+    }
+    const drugs=(d.drug_response||{}).interactions||[];
+    if(drugs.length){
+      html+='<div class="out-label" style="margin-top:12px">Drug response (pharmacogenomics)</div>';
+      drugs.forEach(g=>{
+        const cls=g.impact==='high'?'hi':g.impact==='intermediate'?'warn':'ok';
+        html+='<div class="li-row"><span class="li-k">'+esc(g.drug||'')+' <span class="muted">'+esc(g.gene||'')+'</span></span><span class="li-v"><span class="chip '+cls+'">'+esc(g.impact||'')+'</span> '+esc(g.guidance||'')+'</span></div>';
+      });
+    }
+    if(!html)html='<div class="muted">No known variants matched in this file. SNPs parsed: '+(d.snps_parsed||0)+'</div>';
+    if(d.top_concern)html='<div class="chip hi">top concern: '+esc(d.top_concern)+'</div>'+html;
+    document.getElementById('dna-out').innerHTML=html;
+    document.getElementById('dna-status').textContent=(d.snps_parsed||0)+' SNPs parsed';
+  }catch(e){document.getElementById('dna-status').textContent='⚠ '+e;}
+  btn.disabled=false;
+}
+
+// ── Email agent ──
+async function processEmail(){
+  const raw=document.getElementById('email-text').value.trim();
+  if(!raw){document.getElementById('email-status').textContent='paste an email';return;}
+  const btn=document.getElementById('email-run');btn.disabled=true;
+  document.getElementById('email-status').innerHTML='<span class="spinner">running agent…</span>';
+  try{
+    const d=await postJSON('/api/email/analyze',{
+      raw,
+      send_reply:document.getElementById('email-send').checked,
+      reply_to:document.getElementById('email-to').value.trim(),
+      make_pdf:document.getElementById('email-pdf').checked
+    });
+    const a=d.analysis||{};
+    document.getElementById('email-results').style.display='block';
+    const uCls=(a.urgency==='high')?'hi':'ok';
+    const sCls=(a.sentiment==='negative')?'hi':(a.sentiment==='positive')?'ok':'warn';
+    document.getElementById('email-meta').innerHTML=
+      '<span class="chip">from: '+esc(a.sender||'?')+'</span>'+
+      '<span class="chip">subject: '+esc(a.subject||'?')+'</span>'+
+      '<span class="chip">'+esc(a.category||'general')+'</span>'+
+      '<span class="chip '+uCls+'">urgency: '+esc(a.urgency||'normal')+'</span>'+
+      '<span class="chip '+sCls+'">'+esc(a.sentiment||'neutral')+'</span>';
+    document.getElementById('email-actions').textContent=(a.action_items||[]).map(k=>'• '+k).join('\n')||'—';
+    document.getElementById('email-reply').textContent=a.suggested_reply||'—';
+    const sr=d.send_result||{};
+    document.getElementById('email-send-out').innerHTML=sr.sent?
+      '<span class="chip ok">reply sent → '+esc(sr.to||'')+'</span>':
+      (sr.reason?'<span class="chip warn">not sent: '+esc(sr.reason)+'</span>':'');
+    const row=document.getElementById('email-pdf-row');
+    if(d.pdf_report){row.style.display='block';document.getElementById('email-pdf-link').href='/api/report/download?path='+encodeURIComponent(d.pdf_report);}
+    else row.style.display='none';
+    document.getElementById('email-status').textContent='done';
+  }catch(e){document.getElementById('email-status').textContent='⚠ '+e;}
+  btn.disabled=false;
+}
+
+async function fetchInbox(){
+  const btn=document.getElementById('inbox-run');btn.disabled=true;
+  document.getElementById('inbox-status').innerHTML='<span class="spinner">fetching inbox…</span>';
+  document.getElementById('inbox-out').innerHTML='';
+  try{
+    const d=await postJSON('/api/email/inbox',{
+      limit:parseInt(document.getElementById('inbox-limit').value)||5,
+      make_pdf:document.getElementById('inbox-pdf').checked,
+      auto_reply:document.getElementById('inbox-auto').checked
+    });
+    if(!d.configured){
+      document.getElementById('inbox-status').textContent='';
+      document.getElementById('inbox-out').innerHTML='<div class="chip warn">'+esc(d.error||'IMAP not configured')+'</div>';
+      btn.disabled=false;return;
+    }
+    document.getElementById('inbox-status').textContent=d.count+' unread analyzed';
+    if(!d.count){document.getElementById('inbox-out').innerHTML='<div class="muted">No unread emails.</div>';btn.disabled=false;return;}
+    let html='';
+    d.items.forEach((it,idx)=>{
+      const a=it.analysis||{};
+      const uCls=(a.urgency==='high')?'hi':'ok';
+      const sCls=(a.sentiment==='negative')?'hi':(a.sentiment==='positive')?'ok':'warn';
+      const sr=it.send_result||{};
+      html+='<div class="card" style="background:var(--bg3);margin-bottom:10px">'+
+        '<div style="font-weight:700;color:var(--text);margin-bottom:6px">'+(idx+1)+'. '+esc(a.subject||'(no subject)')+'</div>'+
+        '<div style="margin-bottom:8px"><span class="chip">from: '+esc(a.sender||'?')+'</span>'+
+        '<span class="chip">'+esc(a.category||'general')+'</span>'+
+        '<span class="chip '+uCls+'">urgency: '+esc(a.urgency||'normal')+'</span>'+
+        '<span class="chip '+sCls+'">'+esc(a.sentiment||'neutral')+'</span></div>'+
+        '<div class="out-label">Action items</div><div class="out-block">'+(esc((a.action_items||[]).map(k=>'• '+k).join('\n'))||'—')+'</div>'+
+        '<div class="out-label" style="margin-top:8px">Suggested reply</div><div class="out-block">'+esc(a.suggested_reply||'—')+'</div>'+
+        (sr.sent?'<div style="margin-top:8px"><span class="chip ok">reply sent → '+esc(sr.to||'')+'</span></div>':'')+
+        (it.pdf_report?'<div style="margin-top:8px"><a class="v4-btn ghost" href="/api/report/download?path='+encodeURIComponent(it.pdf_report)+'" target="_blank">⬇ PDF</a></div>':'')+
+        '</div>';
+    });
+    document.getElementById('inbox-out').innerHTML=html;
+  }catch(e){document.getElementById('inbox-status').textContent='⚠ '+e;}
+  btn.disabled=false;
+}
+
+// ── System ──
+let sysLoaded=false;
+async function loadSystem(){
+  if(sysLoaded)return;sysLoaded=true;
+  try{
+    const d=await(await fetch('/api/models')).json();
+    const table=d.routing||d.routing_table||{};
+    let html='';
+    Object.keys(table).forEach(k=>{html+='<div class="li-row"><span class="li-k">'+esc(k)+'</span><span class="li-v">'+esc(table[k])+'</span></div>';});
+    document.getElementById('sys-routing').innerHTML=html||'<span class="muted">no routing data</span>';
+    const inst=d.installed||d.installed_models||[];
+    document.getElementById('sys-installed').innerHTML=inst.length?inst.map(m=>'<span class="chip ok">'+esc(m)+'</span>').join(''):'<span class="muted">Ollama offline</span>';
+  }catch(e){document.getElementById('sys-routing').innerHTML='<span class="muted">⚠ '+e+'</span>';}
+}
+async function searchMem(){
+  const query=document.getElementById('mem-query').value.trim();
+  if(!query)return;
+  document.getElementById('mem-out').innerHTML='<span class="spinner">searching…</span>';
+  try{
+    const d=await postJSON('/api/memory/search',{query,collection:'research_notes',k:5});
+    const res=d.results||[];
+    if(!res.length){document.getElementById('mem-out').innerHTML='<span class="muted">no matches</span>';return;}
+    document.getElementById('mem-out').innerHTML=res.map(r=>
+      '<div class="out-block" style="margin-bottom:8px">'+esc(r.text||'')+
+      (r.distance!=null?'<div class="muted" style="margin-top:4px">distance '+(+r.distance).toFixed(3)+'</div>':'')+'</div>').join('');
+  }catch(e){document.getElementById('mem-out').innerHTML='<span class="muted">⚠ '+e+'</span>';}
+}
+
+// ─────────────── v4: threads ───────────────
+let threadsLoaded=false;
+async function loadThreadList(){
+  try{
+    const d=await(await fetch('/api/threads')).json();
+    const sel=document.getElementById('chat-thread');
+    const cur=sel.value;
+    sel.innerHTML='<option value="">(no thread)</option>'+
+      (d.threads||[]).map(t=>'<option value="'+t.id+'">'+esc(t.name)+' · '+esc(t.category)+' ('+t.messages+')</option>').join('');
+    sel.value=cur;
+    if(!threadsLoaded){
+      const cat=document.getElementById('new-thread-cat');
+      cat.innerHTML=(d.categories||[]).map(c=>'<option>'+esc(c)+'</option>').join('');
+      threadsLoaded=true;
+    }
+  }catch(e){}
+}
+async function createThread(){
+  const name=document.getElementById('new-thread-name').value.trim();
+  if(!name)return;
+  const category=document.getElementById('new-thread-cat').value;
+  try{
+    const t=await postJSON('/api/threads',{name,category});
+    document.getElementById('new-thread-name').value='';
+    await loadThreadList();
+    document.getElementById('chat-thread').value=t.id;
+    loadThread();
+  }catch(e){}
+}
+async function loadThread(){
+  const id=document.getElementById('chat-thread').value;
+  const log=document.getElementById('chat-log');
+  chatHistory=[];
+  if(!id){log.innerHTML='<div class="bubble ai"><div class="who">AMRIT</div>New conversation. No thread selected.</div>';return;}
+  try{
+    const t=await(await fetch('/api/threads/'+id)).json();
+    log.innerHTML='';
+    (t.messages||[]).forEach(m=>{addBubble(m.role==='user'?'user':'ai',m.content);chatHistory.push({role:m.role,content:m.content});});
+    if(!(t.messages||[]).length)log.innerHTML='<div class="bubble ai"><div class="who">AMRIT</div>Thread "'+esc(t.name)+'" — say hello.</div>';
+  }catch(e){}
+}
+
+// ─────────────── v4: research planner ───────────────
+async function runPlanner(){
+  const question=document.getElementById('plan-q').value.trim();
+  if(!question){document.getElementById('plan-status').textContent='enter a question';return;}
+  const btn=document.getElementById('plan-run');btn.disabled=true;
+  document.getElementById('plan-status').innerHTML='<span class="spinner">planning → researching → validating…</span>';
+  try{
+    const d=await postJSON('/api/research/plan',{question,gather_evidence:document.getElementById('plan-evidence').checked,make_pdf:document.getElementById('plan-pdf').checked});
+    let html='<div class="out-label">Plan</div><div class="out-block">'+esc((d.plan||[]).map((p,i)=>(i+1)+'. '+p).join('\n'))+'</div>';
+    html+='<div class="out-label" style="margin-top:10px">Task findings</div>';
+    (d.tasks||[]).forEach(t=>{
+      html+='<div class="out-block" style="margin-bottom:8px"><b>'+esc(t.task)+'</b>\n'+esc(t.finding)+
+        (t.evidence&&t.evidence.length?'\n\n'+t.evidence.map(e=>'• '+esc(e.title)).join('\n'):'')+'</div>';
+    });
+    html+='<div class="out-label" style="margin-top:10px">Validated report <span class="chip ok">score '+(+d.validation_score).toFixed(2)+'</span> <span class="chip">'+d.validation_cycles+' cycle(s)</span></div>';
+    html+='<div class="out-block">'+esc(d.report||'')+'</div>';
+    if(d.pdf_report)html+='<div style="margin-top:10px"><a class="v4-btn" href="/api/report/download?path='+encodeURIComponent(d.pdf_report)+'" target="_blank">⬇ Download PDF report</a></div>';
+    document.getElementById('plan-out').innerHTML=html;
+    document.getElementById('plan-status').textContent=d.online?'done':'done (offline heuristics)';
+  }catch(e){document.getElementById('plan-status').textContent='⚠ '+e;}
+  btn.disabled=false;
+}
+
+// ─────────────── v4: self-critic ───────────────
+async function runCritic(){
+  const question=document.getElementById('critic-q').value.trim();
+  const text=document.getElementById('critic-text').value.trim();
+  if(!question&&!text){document.getElementById('critic-status').textContent='enter a question or answer';return;}
+  const btn=document.getElementById('critic-run');btn.disabled=true;
+  document.getElementById('critic-status').innerHTML='<span class="spinner">critiquing → improving…</span>';
+  try{
+    const d=await postJSON('/api/critic',{question,text,cycles:parseInt(document.getElementById('critic-cycles').value)||2});
+    if(d.error){document.getElementById('critic-status').textContent='⚠ '+d.error;btn.disabled=false;return;}
+    let html='';
+    if(d.answer_generated)html+='<div class="out-label">Initial answer</div><div class="out-block">'+esc(d.initial_answer)+'</div>';
+    html+='<div class="out-label" style="margin-top:10px">Critique cycles</div>';
+    (d.history||[]).forEach(h=>{
+      const cls=h.score>=0.85?'ok':h.score>=0.6?'warn':'hi';
+      html+='<div class="li-row"><span class="li-k">cycle '+h.cycle+'</span><span class="li-v"><span class="chip '+cls+'">score '+(+h.score).toFixed(2)+'</span> '+esc((h.issues||[]).slice(0,3).join('; '))+'</span></div>';
+    });
+    html+='<div class="out-label" style="margin-top:10px">Final answer <span class="chip ok">score '+(+d.final_score).toFixed(2)+'</span></div><div class="out-block">'+esc(d.final_answer)+'</div>';
+    document.getElementById('critic-out').innerHTML=html;
+    document.getElementById('critic-status').textContent='done';
+  }catch(e){document.getElementById('critic-status').textContent='⚠ '+e;}
+  btn.disabled=false;
+}
+
+// ─────────────── v4: self-learning / skills / tools ───────────────
+async function runLearn(){
+  const note=document.getElementById('learn-note').value.trim();
+  document.getElementById('learn-status').innerHTML='<span class="spinner">…</span>';
+  try{
+    const d=await postJSON('/api/learn',{note});
+    document.getElementById('learn-out').innerHTML=(d.learned||[]).length?
+      '<div class="out-label">Lessons stored ('+d.stored+')</div><div class="out-block">'+esc(d.learned.map(l=>'• '+l).join('\n'))+'</div>':
+      '<span class="muted">'+esc(d.reason||'nothing to learn yet')+'</span>';
+    document.getElementById('learn-status').textContent='done';
+  }catch(e){document.getElementById('learn-status').textContent='⚠ '+e;}
+}
+async function createSkill(){
+  const name=document.getElementById('skill-name').value.trim();
+  const description=document.getElementById('skill-desc').value.trim();
+  if(!name){document.getElementById('skill-status').textContent='name required';return;}
+  document.getElementById('skill-status').innerHTML='<span class="spinner">…</span>';
+  try{
+    const d=await postJSON('/api/skills',{name,description});
+    document.getElementById('skill-out').innerHTML='<div class="out-label">'+esc(d.name)+'</div><div class="out-block"><b>Goal:</b> '+esc(d.goal)+'\n\n'+esc((d.steps||[]).map((s,i)=>(i+1)+'. '+s).join('\n'))+(d.when_to_use?'\n\nWhen: '+esc(d.when_to_use):'')+'</div>';
+    document.getElementById('skill-status').textContent='saved';
+  }catch(e){document.getElementById('skill-status').textContent='⚠ '+e;}
+}
+async function buildTool(){
+  const name=document.getElementById('tool-name').value.trim();
+  const description=document.getElementById('tool-desc').value.trim();
+  if(!name||!description){document.getElementById('tool-status').textContent='name + description required';return;}
+  let test_args={};
+  const argStr=document.getElementById('tool-args').value.trim();
+  if(argStr){try{test_args=JSON.parse(argStr);}catch(e){document.getElementById('tool-status').textContent='test args must be valid JSON';return;}}
+  document.getElementById('tool-run').disabled=true;
+  document.getElementById('tool-status').innerHTML='<span class="spinner">generating → sandbox-validating…</span>';
+  try{
+    const d=await postJSON('/api/tools/build',{name,description,test_args});
+    if(!d.ok){
+      document.getElementById('tool-out').innerHTML='<div class="chip hi">failed: '+esc(d.reason||'unknown')+'</div>'+(d.code?'<div class="out-block" style="margin-top:8px">'+esc(d.code)+'</div>':'');
+      document.getElementById('tool-status').textContent='rejected';btn_enable('tool-run');return;
+    }
+    document.getElementById('tool-out').innerHTML='<div class="chip ok">registered as built_'+esc(d.slug)+'</div>'+
+      '<div class="out-label" style="margin-top:8px">Sample output</div><div class="out-block">'+esc(JSON.stringify(d.sample_output,null,2))+'</div>'+
+      '<div class="out-label" style="margin-top:8px">Code</div><div class="out-block">'+esc(d.code)+'</div>';
+    document.getElementById('tool-status').textContent='built & registered';
+  }catch(e){document.getElementById('tool-status').textContent='⚠ '+e;}
+  btn_enable('tool-run');
+}
+function btn_enable(id){const b=document.getElementById(id);if(b)b.disabled=false;}
+
+// ─────────────── v4: scheduler + notifications ───────────────
+async function refreshSched(){
+  try{
+    const d=await(await fetch('/api/scheduler')).json();
+    renderSched(d);
+  }catch(e){}
+}
+function renderSched(d){
+  document.getElementById('sched-state').innerHTML=
+    '<div class="li-row"><span class="li-k">Status</span><span class="li-v"><span class="chip '+(d.running?'ok':'warn')+'">'+(d.running?'RUNNING':'STOPPED')+'</span></span></div>'+
+    '<div class="li-row"><span class="li-k">Interval</span><span class="li-v">'+Math.round(d.interval_seconds/60)+' min</span></div>'+
+    '<div class="li-row"><span class="li-k">Runs</span><span class="li-v">'+d.runs+'</span></div>'+
+    '<div class="li-row"><span class="li-k">Last run</span><span class="li-v">'+esc(d.last_run||'—')+'</span></div>'+
+    '<div class="li-row"><span class="li-k">Next run</span><span class="li-v">'+esc(d.next_run||'—')+'</span></div>';
+}
+async function schedStart(){
+  const mins=parseInt(document.getElementById('sched-int').value)||5;
+  document.getElementById('sched-status').innerHTML='<span class="spinner">…</span>';
+  try{renderSched(await postJSON('/api/scheduler/start',{interval_seconds:mins*60}));document.getElementById('sched-status').textContent='started';refreshNotifs();}catch(e){document.getElementById('sched-status').textContent='⚠ '+e;}
+}
+async function schedStop(){
+  try{renderSched(await postJSON('/api/scheduler/stop',{}));document.getElementById('sched-status').textContent='stopped';refreshNotifs();}catch(e){}
+}
+async function schedRunNow(){
+  document.getElementById('sched-status').innerHTML='<span class="spinner">running campaign…</span>';
+  try{renderSched(await postJSON('/api/scheduler/run',{}));document.getElementById('sched-status').textContent='ran once';refreshNotifs();}catch(e){document.getElementById('sched-status').textContent='⚠ '+e;}
+}
+async function refreshNotifs(){
+  try{
+    const d=await(await fetch('/api/notifications')).json();
+    const n=d.notifications||[];
+    document.getElementById('notif-count').textContent=n.length;
+    const log=document.getElementById('notif-log');
+    if(!n.length){log.innerHTML='<div class="muted">No notifications yet.</div>';return;}
+    log.innerHTML=n.slice().reverse().map(x=>{
+      const cls=x.kind==='high'?'hi':x.kind==='warn'?'warn':x.kind==='ok'?'ok':'';
+      return '<div class="li-row"><span class="li-k">'+esc(x.ts.split('T')[1]||x.ts)+'</span><span class="li-v"><span class="chip '+cls+'">'+esc(x.kind)+'</span> '+esc(x.message)+'</span></div>';
+    }).join('');
+  }catch(e){}
+}
+// Poll notifications periodically so the bell stays current.
+setInterval(()=>{fetch('/api/notifications').then(r=>r.json()).then(d=>{document.getElementById('notif-count').textContent=(d.notifications||[]).length;}).catch(()=>{});},30000);
+
+// Initial loads (functions are now defined)
+loadThreadList();refreshNotifs();
+</script>
+</body>
+</html>

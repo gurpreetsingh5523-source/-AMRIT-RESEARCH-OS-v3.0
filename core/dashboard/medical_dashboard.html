@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AMRIT Medical Intelligence — Live Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f0f4f8;--card:#fff;--border:#e2e8f0;--border2:#cbd5e1;
+  --purple:#6c63ff;--purple2:#8b85ff;--purple3:#ede9fe;
+  --teal:#0d9488;--teal2:#e0f7f4;
+  --amber:#d97706;--amber2:#fef3c7;
+  --red:#dc2626;--red2:#fee2e2;
+  --green:#16a34a;--green2:#dcfce7;
+  --blue:#2563eb;--blue2:#dbeafe;
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --header:#1e1b4b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+
+/* HEADER */
+.hdr{background:var(--header);color:#fff;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.hdr-left{display:flex;align-items:center;gap:12px}
+.logo{width:32px;height:32px;background:var(--purple);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+.hdr-title{font-size:14px;font-weight:600;letter-spacing:.3px}
+.hdr-sub{font-size:10px;color:#a5b4fc;letter-spacing:.5px}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.ws-badge{display:flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.1)}
+.ws-dot{width:7px;height:7px;border-radius:50%;background:#6b7280}
+.ws-dot.live{background:#22c55e;animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.time-badge{font-size:11px;color:#a5b4fc;font-family:'SF Mono',monospace}
+
+/* DATE RANGE */
+.date-row{background:#fff;border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;justify-content:space-between}
+.page-title{font-size:15px;font-weight:600;color:var(--text)}
+.date-badge{font-size:11px;color:var(--text2);background:var(--bg);border:1px solid var(--border);padding:4px 12px;border-radius:4px}
+
+/* METRIC CARDS */
+.metrics-row{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);margin-bottom:0}
+.metric-card{background:#fff;padding:16px 20px;cursor:pointer;transition:background .15s}
+.metric-card:hover{background:#f8fafc}
+.metric-card.active{border-top:3px solid var(--purple)}
+.m-label{font-size:11px;color:var(--text2);font-weight:500;margin-bottom:6px}
+.m-val{font-size:28px;font-weight:700;color:var(--text);line-height:1}
+.m-sub{font-size:11px;margin-top:4px}
+.m-sub.pending{color:var(--amber)}
+.m-sub.ok{color:var(--green)}
+.m-sub.critical{color:var(--red)}
+.m-sub.normal{color:var(--text3)}
+.metric-card.danger{background:#fff5f5}
+.metric-card.danger .m-val{color:var(--red)}
+
+/* MAIN LAYOUT */
+.main{padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+
+/* SECTION */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:13px;font-weight:600;color:var(--text)}
+.view-btn{font-size:11px;color:var(--purple);cursor:pointer;border:none;background:none;font-weight:500}
+
+/* CHARTS */
+.chart-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px}
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+.chart-wrap{position:relative;height:180px}
+
+/* TWO COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:11px}
+.data-table th{text-align:left;color:var(--text3);font-weight:500;padding:6px 8px;border-bottom:1px solid var(--border)}
+.data-table td{padding:7px 8px;border-bottom:1px solid var(--border)}
+.data-table tbody tr:hover{background:var(--bg)}
+.search-input{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px;margin-bottom:8px;outline:none}
+.search-input:focus{border-color:var(--purple)}
+
+/* PIE WRAP */
+.pie-wrap{position:relative;height:160px;display:flex;justify-content:center}
+
+/* ALERT CARD */
+.alert-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.alert-item:last-child{border-bottom:none}
+.alert-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ai-critical{background:var(--red2);color:var(--red)}
+.ai-moderate{background:var(--amber2);color:var(--amber)}
+.ai-info{background:var(--blue2);color:var(--blue)}
+.ai-ok{background:var(--green2);color:var(--green)}
+.alert-body{flex:1}
+.alert-title{font-size:12px;font-weight:600;color:var(--text)}
+.alert-sub{font-size:10px;color:var(--text2);margin-top:2px}
+.alert-ts{font-size:10px;color:var(--text3);white-space:nowrap}
+
+/* PATIENT TIMELINE */
+.timeline-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:center}
+.timeline-item:last-child{border-bottom:none}
+.t-step{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.t-pending{background:var(--amber2);color:var(--amber)}
+.t-done{background:var(--green2);color:var(--green)}
+.t-process{background:var(--purple3);color:var(--purple)}
+.t-info{font-size:12px;font-weight:500;color:var(--text);flex:1}
+.t-sub{font-size:10px;color:var(--text2)}
+.t-badge{font-size:9px;padding:2px 7px;border-radius:10px;font-weight:600}
+.b-urgent{background:var(--red2);color:var(--red)}
+.b-normal{background:var(--green2);color:var(--green)}
+.b-pending{background:var(--amber2);color:var(--amber)}
+.b-processing{background:var(--purple3);color:var(--purple)}
+
+/* DOCTOR QUEUE */
+.doc-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.doc-item:last-child{border-bottom:none}
+.doc-avatar{width:32px;height:32px;border-radius:50%;background:var(--purple3);color:var(--purple);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.doc-info{flex:1}
+.doc-name{font-size:12px;font-weight:600;color:var(--text)}
+.doc-sub{font-size:10px;color:var(--text2);margin-top:1px}
+.approve-btn{padding:4px 10px;border:none;border-radius:4px;background:var(--green);color:#fff;font-size:10px;font-weight:600;cursor:pointer}
+.approve-btn:hover{background:#15803d}
+
+/* BOTTOM STRIP */
+.status-strip{background:var(--header);color:#a5b4fc;font-size:10px;padding:6px 24px;display:flex;gap:20px;align-items:center}
+.ss-item{display:flex;align-items:center;gap:5px}
+
+/* SPINNER */
+.spinner{width:12px;height:12px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="logo">A</div>
+    <div>
+      <div class="hdr-title">AMRIT Medical Intelligence Platform</div>
+      <div class="hdr-sub">AUTONOMOUS CLINICAL DECISION SUPPORT · v4.0</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="ws-badge">
+      <div class="ws-dot live" id="ws-dot"></div>
+      <span id="ws-label">LIVE</span>
+    </div>
+    <div class="time-badge" id="clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- DATE ROW -->
+<div class="date-row">
+  <div class="page-title">Operations Dashboard</div>
+  <div class="date-badge" id="date-range">Loading...</div>
+</div>
+
+<!-- METRIC CARDS -->
+<div class="metrics-row">
+  <div class="metric-card active">
+    <div class="m-label">Patients Analysed</div>
+    <div class="m-val" id="m-patients">0</div>
+    <div class="m-sub pending" id="m-patients-sub">0 pending</div>
+  </div>
+  <div class="metric-card">
+    <div class="m-label">Reports Generated</div>
+    <div class="m-val" id="m-reports">0</div>
+    <div class="m-sub normal" id="m-reports-sub">0 in queue</div>
+  </div>
+  <div class="metric-card">
+    <div class="m-label">Doctor Approved</div>
+    <div class="m-val" id="m-approved">0</div>
+    <div class="m-sub ok" id="m-approved-sub">0 today</div>
+  </div>
+  <div class="metric-card">
+    <div class="m-label">Dispatched to Center</div>
+    <div class="m-val" id="m-dispatched">0</div>
+    <div class="m-sub ok" id="m-dispatched-sub">0 delivered</div>
+  </div>
+  <div class="metric-card danger">
+    <div class="m-label">Critical Alerts</div>
+    <div class="m-val" id="m-alerts">0</div>
+    <div class="m-sub critical" id="m-alerts-sub">Needs attention</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- OVERALL SUMMARY CHART -->
+  <div class="chart-card">
+    <div class="section-hdr">
+      <div class="section-title">Overall Patient Flow — Today</div>
+      <button class="view-btn">View Details →</button>
+    </div>
+    <div class="chart-legend" id="main-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#6c63ff"></div>Analysed</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#0d9488"></div>Reports</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>Approved</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>Dispatched</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div>Alerts</div>
+    </div>
+    <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+  </div>
+
+  <!-- LAB VALUES TREND + ACTIVE ALERTS -->
+  <div class="two-col">
+
+    <!-- Lab Trend -->
+    <div class="chart-card">
+      <div class="section-hdr">
+        <div class="section-title">Lab Values — Real-Time Trend</div>
+        <select style="font-size:11px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;outline:none" id="marker-select" onchange="updateLabChart()">
+          <option value="hemoglobin">Hemoglobin (g/dL)</option>
+          <option value="glucose">Glucose (mg/dL)</option>
+          <option value="hba1c">HbA1c (%)</option>
+          <option value="alt">ALT (U/L)</option>
+          <option value="ldl">LDL (mg/dL)</option>
+        </select>
+      </div>
+      <div class="chart-wrap"><canvas id="labChart"></canvas></div>
+    </div>
+
+    <!-- Active Alerts -->
+    <div class="chart-card">
+      <div class="section-hdr">
+        <div class="section-title">🚨 Active Clinical Alerts</div>
+        <span id="alert-count-badge" style="font-size:10px;background:var(--red2);color:var(--red);padding:2px 8px;border-radius:10px;font-weight:600">0</span>
+      </div>
+      <div id="alerts-list" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- PATIENT TIMELINE + DOCTOR QUEUE + ORG CHART -->
+  <div class="three-col">
+
+    <!-- Patient Timeline -->
+    <div class="chart-card">
+      <div class="section-hdr">
+        <div class="section-title">Patient Pipeline</div>
+        <button class="view-btn" onclick="addPatient()">+ Add</button>
+      </div>
+      <div id="patient-timeline" style="max-height:260px;overflow-y:auto"></div>
+    </div>
+
+    <!-- Doctor Review Queue -->
+    <div class="chart-card">
+      <div class="section-hdr">
+        <div class="section-title">Doctor Review Queue</div>
+        <span id="pending-badge" style="font-size:10px;background:var(--amber2);color:var(--amber);padding:2px 8px;border-radius:10px;font-weight:600">0 pending</span>
+      </div>
+      <div id="doc-queue" style="max-height:260px;overflow-y:auto"></div>
+    </div>
+
+    <!-- Marker Distribution Pie -->
+    <div class="chart-card">
+      <div class="section-hdr">
+        <div class="section-title">Abnormal Markers Distribution</div>
+        <button class="view-btn">View Details →</button>
+      </div>
+      <div class="pie-wrap"><canvas id="pieChart"></canvas></div>
+      <div id="pie-legend" style="margin-top:8px;font-size:10px;display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+  </div>
+
+  <!-- ORG TABLE + REFERRAL TABLE -->
+  <div class="two-col">
+    <div class="chart-card">
+      <div class="section-hdr">
+        <div class="section-title">Pattern Wise Count</div>
+        <button class="view-btn">View Details →</button>
+      </div>
+      <input class="search-input" placeholder="Search pattern..." oninput="filterTable('pattern-table',this.value)">
+      <table class="data-table" id="pattern-table">
+        <thead><tr><th>Pattern</th><th>Count</th></tr></thead>
+        <tbody id="pattern-tbody"></tbody>
+      </table>
+    </div>
+    <div class="chart-card">
+      <div class="section-hdr">
+        <div class="section-title">Doctor Referral Count</div>
+        <button class="view-btn">View Details →</button>
+      </div>
+      <input class="search-input" placeholder="Search doctor..." oninput="filterTable('referral-table',this.value)">
+      <table class="data-table" id="referral-table">
+        <thead><tr><th>Doctor</th><th>Approvals</th></tr></thead>
+        <tbody id="referral-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS STRIP -->
+<div class="status-strip">
+  <div class="ss-item"><span id="s-ollama">⬤ Ollama: offline</span></div>
+  <div class="ss-item">⬤ FastAPI: <span id="s-api">checking...</span></div>
+  <div class="ss-item">⬤ SQLite: connected</div>
+  <div class="ss-item">⬤ TurboVec: <span id="s-tv">standby</span></div>
+  <div class="ss-item" style="margin-left:auto">AMRIT Research OS v4.5 | Gurpreet Singh</div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+const STATE = {
+  patients: 0, reports: 0, approved: 0, dispatched: 0, alerts: 0,
+  patientList: [], docQueue: [], alertList: [],
+  mainData: { labels: [], analysed: [], reports: [], approved: [], dispatched: [], alerts: [] },
+  labData: { hemoglobin: [], glucose: [], hba1c: [], alt: [], ldl: [] },
+  labLabels: [],
+  patterns: { Anemia: 0, Diabetes: 0, "Liver Disease": 0, "Cardiovascular Risk": 0, "Kidney Disease": 0, "Thyroid": 0 },
+  referrals: {}
+};
+
+const LAB_NORMALS = {
+  hemoglobin: [13.5, 17.5], glucose: [70, 100],
+  hba1c: [4.0, 5.6], alt: [7, 56], ldl: [0, 100]
+};
+
+const DOCTORS = ["Dr. Gurpreet Singh", "Dr. Priya Sharma", "Dr. Vikram Kaur", "Dr. Amandeep Dhillon", "Dr. Ranjit Bains"];
+const PATIENT_NAMES = ["Harpreet K.", "Sukhwinder S.", "Manpreet G.", "Gurjeet D.", "Amarjit B.", "Parveen S.", "Kulwinder M.", "Navjot R."];
+
+// ════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════
+const ALPHA = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2,'0');
+
+// Main Flow Chart
+const mainCtx = document.getElementById('mainChart').getContext('2d');
+const mainChart = new Chart(mainCtx, {
+  type: 'line',
+  data: {
+    labels: STATE.mainData.labels,
+    datasets: [
+      { label: 'Analysed',  data: STATE.mainData.analysed,   borderColor:'#6c63ff', backgroundColor:ALPHA('#6c63ff',0.08), tension:.4, fill:true, pointRadius:3 },
+      { label: 'Reports',   data: STATE.mainData.reports,    borderColor:'#0d9488', backgroundColor:ALPHA('#0d9488',0.08), tension:.4, fill:true, pointRadius:3 },
+      { label: 'Approved',  data: STATE.mainData.approved,   borderColor:'#16a34a', backgroundColor:ALPHA('#16a34a',0.06), tension:.4, fill:true, pointRadius:3 },
+      { label: 'Dispatched',data: STATE.mainData.dispatched, borderColor:'#f59e0b', backgroundColor:ALPHA('#f59e0b',0.06), tension:.4, fill:true, pointRadius:3 },
+      { label: 'Alerts',    data: STATE.mainData.alerts,     borderColor:'#dc2626', backgroundColor:ALPHA('#dc2626',0.06), tension:.4, fill:false, pointRadius:3, borderDash:[4,2] },
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false, animation:{duration:400},
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ grid:{ color:'#f1f5f9' }, ticks:{ font:{size:10}, color:'#94a3b8' } },
+      y:{ grid:{ color:'#f1f5f9' }, ticks:{ font:{size:10}, color:'#94a3b8' }, beginAtZero:true }
+    }
+  }
+});
+
+// Lab Trend Chart
+const labCtx = document.getElementById('labChart').getContext('2d');
+const labChart = new Chart(labCtx, {
+  type: 'line',
+  data: { labels: STATE.labLabels, datasets: [{
+    label: 'Hemoglobin', data: STATE.labData.hemoglobin,
+    borderColor:'#6c63ff', backgroundColor:ALPHA('#6c63ff',0.1), tension:.4, fill:true, pointRadius:4
+  }]},
+  options: {
+    responsive:true, maintainAspectRatio:false, animation:{duration:300},
+    plugins:{
+      legend:{ display:false },
+      annotation: { annotations: { normalLow:{ type:'line', yMin:13.5, yMax:13.5, borderColor:'#22c55e', borderWidth:1, borderDash:[4,2] } } }
+    },
+    scales:{
+      x:{ grid:{ color:'#f1f5f9' }, ticks:{ font:{size:10}, color:'#94a3b8' } },
+      y:{ grid:{ color:'#f1f5f9' }, ticks:{ font:{size:10}, color:'#94a3b8' } }
+    }
+  }
+});
+
+// Pie Chart
+const pieColors = ['#6c63ff','#0d9488','#f59e0b','#dc2626','#16a34a','#2563eb'];
+const pieCtx = document.getElementById('pieChart').getContext('2d');
+const pieChart = new Chart(pieCtx, {
+  type:'doughnut',
+  data:{ labels: Object.keys(STATE.patterns), datasets:[{ data: Object.values(STATE.patterns), backgroundColor: pieColors, borderWidth:1, borderColor:'#fff' }] },
+  options:{
+    responsive:true, maintainAspectRatio:false, animation:{duration:600},
+    plugins:{ legend:{ display:false } }
+  }
+});
+
+function updateLabChart() {
+  const marker = document.getElementById('marker-select').value;
+  labChart.data.datasets[0].label = marker;
+  labChart.data.datasets[0].data = [...STATE.labData[marker]];
+  labChart.data.labels = [...STATE.labLabels];
+  labChart.update('none');
+}
+
+// ════════════════════════════════════════
+// SIMULATION ENGINE
+// ════════════════════════════════════════
+let tickCount = 0;
+
+function rnd(a,b){ return Math.random()*(b-a)+a; }
+function now(){ return new Date().toLocaleTimeString('en-GB',{hour12:false}); }
+
+const PATTERNS_LIST = Object.keys(STATE.patterns);
+const ALERT_TEMPLATES = [
+  { sev:'critical', icon:'🚨', title:'Critical Hemoglobin Detected', get sub(){ return `Patient ${rndName()} — Hb ${(rnd(5,8.5)).toFixed(1)} g/dL (critically low)` } },
+  { sev:'critical', icon:'🚨', title:'Severe Hyperglycemia Alert',   get sub(){ return `Glucose ${Math.round(rnd(350,500))} mg/dL — urgent insulin protocol needed` } },
+  { sev:'moderate', icon:'⚠️', title:'Elevated Liver Enzymes',       get sub(){ return `ALT ${Math.round(rnd(80,150))} U/L — monitor for hepatic dysfunction` } },
+  { sev:'moderate', icon:'⚠️', title:'Anomaly Detected — IsolationForest', get sub(){ return `PatternAnalyzer flagged unexpected ${['WBC','Creatinine','TSH'][Math.floor(rnd(0,3))]} deviation` } },
+  { sev:'info',     icon:'ℹ️', title:'CAG Repeat Expansion Detected', get sub(){ return `Hurst exponent H=0.${Math.floor(rnd(15,30))} — possible trinucleotide repeat` } },
+  { sev:'ok',       icon:'✅', title:'Lab Values Normalising',         get sub(){ return `${rndName()}: Hemoglobin trend improving over last 3 readings` } },
+];
+function rndName(){ return PATIENT_NAMES[Math.floor(rnd(0,PATIENT_NAMES.length))]; }
+
+function tick() {
+  tickCount++;
+  const t = now();
+
+  // ── Metrics ─────────────────────────────────────────────
+  STATE.patients   += Math.random() < 0.4 ? 1 : 0;
+  STATE.reports     = Math.min(STATE.patients, STATE.patients - Math.floor(rnd(0,2)));
+  STATE.approved    = Math.floor(STATE.reports * rnd(0.75,0.92));
+  STATE.dispatched  = Math.floor(STATE.approved * rnd(0.80,0.98));
+  const newAlerts   = Math.random() < 0.25 ? 1 : 0;
+  STATE.alerts     += newAlerts;
+
+  document.getElementById('m-patients').textContent  = STATE.patients;
+  document.getElementById('m-reports').textContent   = STATE.reports;
+  document.getElementById('m-approved').textContent  = STATE.approved;
+  document.getElementById('m-dispatched').textContent= STATE.dispatched;
+  document.getElementById('m-alerts').textContent    = STATE.alerts;
+
+  const pending = STATE.patients - STATE.reports;
+  document.getElementById('m-patients-sub').textContent = `${pending} pending`;
+  document.getElementById('m-reports-sub').textContent  = `${Math.max(0,STATE.reports-STATE.approved)} in queue`;
+  document.getElementById('m-approved-sub').textContent = `${STATE.approved} today`;
+  document.getElementById('m-dispatched-sub').textContent = `${STATE.dispatched} delivered`;
+  document.getElementById('m-alerts-sub').textContent = STATE.alerts > 0 ? 'Needs attention' : 'All clear';
+
+  // ── Main flow chart ──────────────────────────────────────
+  if (STATE.mainData.labels.length > 20) {
+    ['labels','analysed','reports','approved','dispatched','alerts'].forEach(k => STATE.mainData[k].shift());
+  }
+  STATE.mainData.labels.push(t);
+  STATE.mainData.analysed.push(STATE.patients);
+  STATE.mainData.reports.push(STATE.reports);
+  STATE.mainData.approved.push(STATE.approved);
+  STATE.mainData.dispatched.push(STATE.dispatched);
+  STATE.mainData.alerts.push(STATE.alerts);
+  mainChart.update('none');
+
+  // ── Lab values ───────────────────────────────────────────
+  if (STATE.labLabels.length > 15) {
+    STATE.labLabels.shift();
+    Object.keys(STATE.labData).forEach(k => STATE.labData[k].shift());
+  }
+  STATE.labLabels.push(t);
+  STATE.labData.hemoglobin.push(parseFloat(rnd(7,15).toFixed(1)));
+  STATE.labData.glucose.push(Math.round(rnd(65,250)));
+  STATE.labData.hba1c.push(parseFloat(rnd(4.5,9.5).toFixed(1)));
+  STATE.labData.alt.push(Math.round(rnd(15,120)));
+  STATE.labData.ldl.push(Math.round(rnd(60,200)));
+  updateLabChart();
+
+  // ── Alerts ───────────────────────────────────────────────
+  if (newAlerts || (tickCount < 5)) {
+    const tmpl = ALERT_TEMPLATES[Math.floor(rnd(0,ALERT_TEMPLATES.length))];
+    STATE.alertList.unshift({ sev: tmpl.sev, icon: tmpl.icon, title: tmpl.title, sub: tmpl.sub, ts: t });
+    if (STATE.alertList.length > 8) STATE.alertList.pop();
+    renderAlerts();
+  }
+
+  // ── Patterns pie ──────────────────────────────────────────
+  if (Math.random() < 0.3) {
+    const p = PATTERNS_LIST[Math.floor(rnd(0,PATTERNS_LIST.length))];
+    STATE.patterns[p]++;
+    pieChart.data.datasets[0].data = Object.values(STATE.patterns);
+    pieChart.update('none');
+    renderPieLegend();
+  }
+
+  // ── Pattern table ─────────────────────────────────────────
+  renderPatternTable();
+
+  // ── Patient timeline ──────────────────────────────────────
+  if (Math.random() < 0.35 || tickCount === 1) {
+    addPatientToList();
+    renderTimeline();
+  }
+  progressPatients();
+
+  // ── Doctor queue ──────────────────────────────────────────
+  if (Math.random() < 0.25 || tickCount < 3) {
+    STATE.docQueue.unshift({
+      name: rndName(),
+      id: 'P' + String(Math.floor(rnd(1000,9999))),
+      doctor: DOCTORS[Math.floor(rnd(0,DOCTORS.length))],
+      status: 'pending',
+      ts: t,
+      pattern: PATTERNS_LIST[Math.floor(rnd(0,PATTERNS_LIST.length))],
+    });
+    if (STATE.docQueue.length > 6) STATE.docQueue.pop();
+    renderDocQueue();
+  }
+
+  // ── Referral table ────────────────────────────────────────
+  const doc = DOCTORS[Math.floor(rnd(0,DOCTORS.length))];
+  STATE.referrals[doc] = (STATE.referrals[doc] || 0) + (Math.random() < 0.3 ? 1 : 0);
+  renderReferralTable();
+}
+
+// ════════════════════════════════════════
+// RENDER FUNCTIONS
+// ════════════════════════════════════════
+function renderAlerts() {
+  const el = document.getElementById('alerts-list');
+  document.getElementById('alert-count-badge').textContent = STATE.alertList.length;
+  el.innerHTML = STATE.alertList.map(a => {
+    const cls = { critical:'ai-critical', moderate:'ai-moderate', info:'ai-info', ok:'ai-ok' }[a.sev] || 'ai-info';
+    return `<div class="alert-item">
+      <div class="alert-icon ${cls}">${a.icon}</div>
+      <div class="alert-body">
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-sub">${a.sub}</div>
+      </div>
+      <div class="alert-ts">${a.ts}</div>
+    </div>`;
+  }).join('');
+}
+
+function addPatientToList() {
+  const steps = ['Data Ingested','Analysis Running','Pattern Detection','Report Generated','Doctor Queue','Dispatched'];
+  const stepIdx = Math.floor(rnd(0,steps.length));
+  STATE.patientList.unshift({
+    name: rndName(), id: 'P'+String(Math.floor(rnd(1000,9999))),
+    step: stepIdx, steps, status: stepIdx >= 5 ? 'done' : stepIdx >= 3 ? 'pending' : 'processing',
+    ts: now(),
+    severity: ['CRITICAL','MODERATE','NORMAL'][Math.floor(rnd(0,3))],
+  });
+  if (STATE.patientList.length > 8) STATE.patientList.pop();
+}
+function addPatient() { addPatientToList(); renderTimeline(); }
+
+function progressPatients() {
+  STATE.patientList.forEach(p => {
+    if (p.step < p.steps.length - 1 && Math.random() < 0.15) { p.step++; }
+  });
+  renderTimeline();
+}
+
+function renderTimeline() {
+  const el = document.getElementById('patient-timeline');
+  el.innerHTML = STATE.patientList.map(p => {
+    const sev = { CRITICAL:'b-urgent', MODERATE:'b-pending', NORMAL:'b-normal' }[p.severity] || 'b-normal';
+    const icon = { done:'✓', pending:'⏳', processing:'⚙' }[p.status] || '⚙';
+    const cls  = { done:'t-done', pending:'t-pending', processing:'t-process' }[p.status] || 't-process';
+    return `<div class="timeline-item">
+      <div class="t-step ${cls}">${icon}</div>
+      <div style="flex:1">
+        <div class="t-info">${p.name} <span style="color:var(--text3);font-size:10px">${p.id}</span></div>
+        <div class="t-sub">${p.steps[p.step]} · ${p.ts}</div>
+      </div>
+      <span class="t-badge ${sev}">${p.severity}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderDocQueue() {
+  const pending = STATE.docQueue.filter(d => d.status === 'pending').length;
+  document.getElementById('pending-badge').textContent = `${pending} pending`;
+  document.getElementById('doc-queue').innerHTML = STATE.docQueue.map((d,i) =>
+    `<div class="doc-item">
+      <div class="doc-avatar">${d.doctor.split(' ').slice(-1)[0][0]}${d.doctor.split(' ').slice(-2,-1)[0]?.[0]||''}</div>
+      <div class="doc-info">
+        <div class="doc-name">${d.name} · ${d.id}</div>
+        <div class="doc-sub">${d.pattern} · ${d.doctor} · ${d.ts}</div>
+      </div>
+      ${d.status==='pending'
+        ? `<button class="approve-btn" onclick="approveDoc(${i})">Approve</button>`
+        : `<span style="font-size:10px;color:var(--green);font-weight:600">✓ Done</span>`}
+    </div>`
+  ).join('');
+}
+function approveDoc(i) {
+  STATE.docQueue[i].status = 'approved';
+  STATE.approved++;
+  document.getElementById('m-approved').textContent = STATE.approved;
+  renderDocQueue();
+}
+
+function renderPatternTable() {
+  document.getElementById('pattern-tbody').innerHTML =
+    Object.entries(STATE.patterns).sort((a,b)=>b[1]-a[1]).map(([k,v]) =>
+      `<tr><td>${k}</td><td><strong>${v}</strong></td></tr>`
+    ).join('');
+}
+function renderReferralTable() {
+  document.getElementById('referral-tbody').innerHTML =
+    Object.entries(STATE.referrals).sort((a,b)=>b[1]-a[1]).map(([k,v]) =>
+      `<tr><td>${k}</td><td><strong>${v}</strong></td></tr>`
+    ).join('');
+}
+function renderPieLegend() {
+  const el = document.getElementById('pie-legend');
+  el.innerHTML = Object.entries(STATE.patterns).map(([k,v],i) =>
+    `<div style="display:flex;align-items:center;gap:3px"><div style="width:7px;height:7px;border-radius:50%;background:${pieColors[i%pieColors.length]}"></div><span>${k}: ${v}</span></div>`
+  ).join('');
+}
+function filterTable(id, val) {
+  const rows = document.getElementById(id).querySelectorAll('tbody tr');
+  rows.forEach(r => r.style.display = r.textContent.toLowerCase().includes(val.toLowerCase()) ? '' : 'none');
+}
+
+// ════════════════════════════════════════
+// CLOCK + DATE
+// ════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-GB',{hour12:false});
+  document.getElementById('date-range').textContent =
+    now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
+// ════════════════════════════════════════
+// WEBSOCKET (connects to existing server.py)
+// ════════════════════════════════════════
+function connectWS() {
+  const host = window.location.hostname || 'localhost';
+  const port = window.location.port || '8000';
+  const ws = new WebSocket(`ws://${host}:${port}/ws/medical`);
+
+  ws.onopen = () => {
+    document.getElementById('ws-dot').className = 'ws-dot live';
+    document.getElementById('ws-label').textContent = 'LIVE';
+    document.getElementById('s-api').textContent = 'connected';
+  };
+  ws.onmessage = (evt) => {
+    try {
+      const data = JSON.parse(evt.data);
+      // Merge real backend data when WebSocket is live
+      if (data.patients !== undefined) STATE.patients = data.patients;
+      if (data.alerts)    data.alerts.forEach(a => { STATE.alertList.unshift(a); });
+      if (data.ollama_ok) document.getElementById('s-ollama').textContent = '⬤ Ollama: ' + (data.ollama_model || 'online');
+    } catch(e) {}
+  };
+  ws.onclose = () => {
+    document.getElementById('ws-dot').className = 'ws-dot';
+    document.getElementById('ws-label').textContent = 'OFFLINE — simulation mode';
+    document.getElementById('s-api').textContent = 'simulation mode';
+    // Reconnect after 5s
+    setTimeout(connectWS, 5000);
+  };
+  ws.onerror = () => ws.close();
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+// Initial data burst
+for (let i=0; i<5; i++) {
+  STATE.labLabels.push(`T-${5-i}`);
+  STATE.labData.hemoglobin.push(parseFloat(rnd(8,14).toFixed(1)));
+  STATE.labData.glucose.push(Math.round(rnd(80,200)));
+  STATE.labData.hba1c.push(parseFloat(rnd(5,8).toFixed(1)));
+  STATE.labData.alt.push(Math.round(rnd(20,100)));
+  STATE.labData.ldl.push(Math.round(rnd(80,180)));
+}
+updateLabChart();
+renderPieLegend();
+
+// Start simulation + clock
+setInterval(updateClock, 1000);
+setInterval(tick, 3000);
+tick(); // immediate first tick
+
+// Try WebSocket (falls back gracefully to simulation)
+connectWS();
+</script>
+</body>
+</html>

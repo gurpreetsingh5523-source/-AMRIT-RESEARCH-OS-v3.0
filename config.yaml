@@ -1,0 +1,123 @@
+# AMRIT RESEARCH OS v4.5 — Configuration
+
+system:
+  name: "AMRIT RESEARCH OS"
+  version: "4.0"
+  author: "Gurpreet Singh"
+  log_level: "INFO"
+  log_file: "logs/system.log"
+
+database:
+  research_db: "data/research.db"
+  knowledge_graph_db: "data/knowledge_graph.db"
+  health_graph_db: "data/health_graph.db"
+  vector_store: "data/vector_store"
+
+# ── Multi-Model Brain (router picks first INSTALLED model per task) ──
+models:
+  default: "deepseek-coder-v2:latest"
+  # ── Dynamic Loading (v4.5) ──
+  # true  = ਸਿਰਫ਼ local Ollama models ਵਰਤੋ (ਕੋਈ API cost ਨਹੀਂ)
+  # false = API models ਵੀ ਚੱਲ ਸਕਦੇ ਹਨ
+  prefer_local: true
+  # auto_discover = ਨਵੇਂ models ਆਪੇ ਲੱਭੋ (hardcoding ਨਹੀਂ)
+  auto_discover: true
+  routing:
+    deep_reasoning: ["qwen3:14b", "deepseek-r1", "deepseek-coder-v2:latest"]
+    coding:         ["deepseek-coder-v2:latest", "qwen2.5-coder"]
+    fast_tasks:     ["llama3.2", "deepseek-coder-v2:16b-lite-instruct-q4_K_M"]
+    research:       ["mistral", "llama3.1", "deepseek-coder-v2:latest"]
+    planning:       ["gemma3", "gemma2", "deepseek-coder-v2:latest"]
+    embedding:      ["nomic-embed-text:latest"]
+    vision:         ["llava:7b"]
+
+# ── Vector Memory (ChromaDB) ──
+vector_memory:
+  enabled: true
+  embedder: "nomic-embed-text:latest"   # local Ollama embeddings
+  collections:
+    - conversations
+    - papers
+    - research_notes
+    - discoveries
+    - long_term_memory
+
+# ── Self-Critique Loop ──
+self_critique:
+  cycles: 3
+  threshold: 0.85
+
+# ── Sandbox ──
+sandbox:
+  timeout_seconds: 8
+  allowed_libs: [numpy, pandas, scipy, math, statistics, matplotlib, random, json]
+
+# ── Medical / DNA module ──
+medical:
+  enabled: true
+  ncbi_email: "amrit@research.os"
+  disclaimer: "Research/education only. Not a medical diagnosis."
+
+data_sources:
+  timeout: 10          # HTTP request timeout (seconds)
+  max_per_source: 5    # Max results per source per query
+  reliability_scores:
+    NASA: 95
+    PubMed: 98
+    ArXiv: 85
+    OpenAlex: 80
+    SemanticScholar: 82
+    CrossRef: 88
+
+statistics:
+  monte_carlo_iterations: 10000
+  benford_alpha: 0.05
+  default_sample_size: 1000
+
+agents:
+  enabled:
+    - ResearchAgent
+    - MathAgent
+    - PhysicsAgent
+    - BiologyAgent
+    - ReviewerAgent
+    - SkepticAgent
+    - CoderAgent
+
+knowledge_graph:
+  export_path: "reports/json/knowledge_graph.json"
+
+paper_writer:
+  output_dir: "reports"
+  pdf_dir: "reports/pdf"
+  json_dir: "reports/json"
+
+quantum:
+  enabled: true
+  backend: "simulation"   # 'simulation' | 'qiskit' (when installed)
+
+dashboard:
+  terminal: true
+
+# ── Research Domains ──────────────────────────────────
+research:
+  default_domain: ""      # leave empty for random
+  domains:
+    - Physics
+    - Biology
+    - Mathematics
+    - Astronomy
+    - Chemistry
+    - Neuroscience
+    - Climate Science
+
+# ── Development Roadmap ──────────────────────────────
+roadmap:
+  phase_1: "Core Research Brain          ✅"
+  phase_2: "Memory + Database            ✅"
+  phase_3: "Multi-Agent Swarm            ✅"
+  phase_4: "Knowledge Graph              ✅"
+  phase_5: "Paper Generator              ✅"
+  phase_6: "Dashboard                    ✅"
+  phase_7: "Quantum Layer                ✅ (simulation)"
+  phase_8: "Autonomous Scientist         ✅"
